@@ -1,0 +1,1 @@
+"""Manimai application package."""

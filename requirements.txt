@@ -1,0 +1,12 @@
+# Core dependencies
+manim>=0.18.0
+PySide6>=6.6.0
+
+# AI clients
+openai>=1.0.0
+httpx>=0.25.0
+requests>=2.31.0
+
+# Development tools (optional)
+# nuitka  # For building standalone executables
+# ordered-set  # For optimized builds
