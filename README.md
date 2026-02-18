@@ -2,6 +2,8 @@
 
 <div align="center">
 
+![](/docx/img/001.apng)
+
 一个简单的程序 允许使用 LLM 轻松创建3B1B风格的动画
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
