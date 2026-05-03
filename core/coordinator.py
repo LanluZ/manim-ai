@@ -88,8 +88,19 @@ class Coordinator:
         # 最终状态
         final_events = {EventType.TASK_COMPLETED, EventType.TASK_FAILED}
 
+        max_loop_iterations = 100  # 安全限制，防止无限循环
+        loop_count = 0
+
         try:
             while event.type not in final_events:
+                loop_count += 1
+                if loop_count > max_loop_iterations:
+                    return TaskResult(
+                        success=False,
+                        error=f"执行循环超限 ({max_loop_iterations}次)",
+                        events=context.events,
+                    )
+
                 context.add_event(event)
                 self._log(f"处理事件: {event.type.value}")
 
