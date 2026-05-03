@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
-from typing import TYPE_CHECKING, Callable, Awaitable
+from typing import TYPE_CHECKING
 
 from core.events import Event, EventType
 
@@ -52,7 +52,7 @@ class EventBus:
 
     async def dispatch(self, event: Event, context: TaskContext) -> Event | None:
         """分发事件给订阅者，返回处理结果"""
-        subscribers = self._subscribers.get(event.type, [])
+        subscribers = list(self._subscribers.get(event.type, []))
         if not subscribers:
             return None
 
