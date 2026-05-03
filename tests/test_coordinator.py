@@ -3,13 +3,13 @@
 
 import pytest
 
-from app.config import AISettings, RenderSettings, AgentConfig
-from agents.planner import PlannerAgent
-from agents.coder import CoderAgent
-from agents.reviewer import ReviewerAgent
-from agents.renderer import RendererAgent
-from core.coordinator import Coordinator
-from core.events import EventType
+from src.services.config import AISettings, RenderSettings, AgentConfig
+from src.agents.planner import PlannerAgent
+from src.agents.coder import CoderAgent
+from src.agents.reviewer import ReviewerAgent
+from src.agents.renderer import RendererAgent
+from src.core.coordinator import Coordinator
+from src.core.events import EventType
 
 
 def test_coordinator_creation():

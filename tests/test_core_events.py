@@ -1,7 +1,7 @@
 # tests/test_core_events.py
 """核心事件模块单元测试"""
 
-from core.events import Event, EventType
+from src.core.events import Event, EventType
 
 
 def test_event_creation():
