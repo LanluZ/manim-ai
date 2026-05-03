@@ -36,3 +36,12 @@ class AISettings:
     deepseek_model: str
     gemini_api_key: str
     gemini_model: str
+
+
+@dataclass(frozen=True)
+class AgentConfig:
+    """Agent 配置"""
+    max_iterations: int = 5      # Coder-Reviewer 最大迭代次数
+    ai_timeout: int = 60         # AI 调用超时（秒）
+    render_timeout: int = 600    # 渲染超时（秒）
+    temperature: float = 0.2     # AI 生成温度
