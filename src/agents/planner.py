@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from core.agent import Agent
-from core.context import TaskContext
-from core.events import Event, EventType
+from src.core.agent import Agent
+from src.core.context import TaskContext
+from src.core.events import Event, EventType
 
 PLANNER_PROMPT = """你是一个动画任务规划专家。请分析用户需求并分解为具体步骤。
 
@@ -37,7 +37,7 @@ class PlannerAgent(Agent):
             full_prompt = PLANNER_PROMPT.format(prompt=prompt)
 
             # 调用AI
-            from app.ai_clients import generate_manim_code
+            from src.services.ai_clients import generate_manim_code
             ai_mode = self._get_ai_mode(context)
 
             _, response = generate_manim_code(

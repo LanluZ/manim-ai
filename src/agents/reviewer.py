@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 import ast
 
-from core.agent import Agent
-from core.context import TaskContext
-from core.events import Event, EventType
+from src.core.agent import Agent
+from src.core.context import TaskContext
+from src.core.events import Event, EventType
 
 REVIEWER_PROMPT = """审查以下 Manim 代码是否符合规范：
 
@@ -85,7 +85,7 @@ class ReviewerAgent(Agent):
 
     async def _ai_review(self, code: str, context: TaskContext) -> dict:
         """AI增强审查"""
-        from app.ai_clients import generate_manim_code
+        from src.services.ai_clients import generate_manim_code
 
         prompt = REVIEWER_PROMPT.format(code=code)
         ai_mode = self._get_ai_mode(context)

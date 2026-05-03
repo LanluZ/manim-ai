@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.manim_runner import RenderError, render_manim_scene
-from core.agent import Agent
-from core.context import TaskContext, TaskResult
-from core.events import Event, EventType
+from src.services.manim_runner import RenderError, render_manim_scene
+from src.core.agent import Agent
+from src.core.context import TaskContext, TaskResult
+from src.core.events import Event, EventType
 
 
 class RendererAgent(Agent):

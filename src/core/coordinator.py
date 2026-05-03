@@ -5,11 +5,11 @@ import uuid
 from pathlib import Path
 from typing import Callable
 
-from app.config import AgentConfig, AISettings, RenderSettings
-from core.agent import Agent
-from core.context import TaskContext, TaskResult
-from core.events import Event, EventType
-from core.message_bus import EventBus
+from src.services.config import AgentConfig, AISettings, RenderSettings
+from src.core.agent import Agent
+from src.core.context import TaskContext, TaskResult
+from src.core.events import Event, EventType
+from src.core.message_bus import EventBus
 
 
 class Coordinator:

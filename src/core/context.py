@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from core.events import Event
+from src.core.events import Event
 
 
 @dataclass

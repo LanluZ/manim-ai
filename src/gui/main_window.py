@@ -34,9 +34,9 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 
-from app.config import AISettings, RenderSettings
-from app.database import Database, Segment
-from app.workers import RenderWorker, start_worker, TaskResult
+from src.services.config import AISettings, RenderSettings
+from src.services.database import Database, Segment
+from src.gui.workers import RenderWorker, start_worker, TaskResult
 
 
 @dataclass

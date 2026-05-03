@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from app.config import RenderSettings
+from src.services.config import RenderSettings
 
 
 @dataclass(frozen=True)

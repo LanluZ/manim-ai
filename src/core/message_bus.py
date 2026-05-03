@@ -5,11 +5,11 @@ import asyncio
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from core.events import Event, EventType
+from src.core.events import Event, EventType
 
 if TYPE_CHECKING:
-    from core.agent import Agent
-    from core.context import TaskContext
+    from src.core.agent import Agent
+    from src.core.context import TaskContext
 
 
 class EventBus:

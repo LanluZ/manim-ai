@@ -14,12 +14,12 @@ def main() -> None:
     if "--cli" in sys.argv:
         # CLI模式：移除--cli参数后传递给CLI解析器
         sys.argv.remove("--cli")
-        from cli.main import main as cli_main
+        from src.cli.main import main as cli_main
         cli_main()
     else:
         # GUI模式（默认）
-        from app.database import Database
-        from app.ui_main import run_app
+        from src.services.database import Database
+        from src.gui.main_window import run_app
 
         db = Database(data_dir / "manimai.db")
         jobs_dir = data_dir / "jobs"

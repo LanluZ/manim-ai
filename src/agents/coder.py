@@ -1,9 +1,9 @@
 # agents/coder.py
 from __future__ import annotations
 
-from core.agent import Agent
-from core.context import TaskContext
-from core.events import Event, EventType
+from src.core.agent import Agent
+from src.core.context import TaskContext
+from src.core.events import Event, EventType
 
 SECTION_MARKER = "# <<SECTION_BREAK>>"
 
@@ -57,7 +57,7 @@ class CoderAgent(Agent):
         tasks = event.payload["tasks"]
 
         try:
-            from app.ai_clients import generate_manim_code, sanitize_code
+            from src.services.ai_clients import generate_manim_code, sanitize_code
 
             prompt = CODER_PROMPT_NEW.format(tasks="\n".join(f"- {t}" for t in tasks))
             ai_mode = self._get_ai_mode(context)
@@ -99,7 +99,7 @@ class CoderAgent(Agent):
             )
 
         try:
-            from app.ai_clients import generate_manim_code, sanitize_code
+            from src.services.ai_clients import generate_manim_code, sanitize_code
 
             feedback_section = f"\n审查反馈：{feedback}\n请根据反馈修复代码。\n"
             prompt = CODER_PROMPT_CONTINUE.format(

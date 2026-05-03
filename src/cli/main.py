@@ -5,13 +5,13 @@ import asyncio
 import argparse
 from pathlib import Path
 
-from app.config import AISettings, RenderSettings
-from app.database import Database
-from agents.planner import PlannerAgent
-from agents.coder import CoderAgent
-from agents.reviewer import ReviewerAgent
-from agents.renderer import RendererAgent
-from core.coordinator import Coordinator
+from src.services.config import AISettings, RenderSettings
+from src.services.database import Database
+from src.agents.planner import PlannerAgent
+from src.agents.coder import CoderAgent
+from src.agents.reviewer import ReviewerAgent
+from src.agents.renderer import RendererAgent
+from src.core.coordinator import Coordinator
 
 
 class CLIProgressHandler:

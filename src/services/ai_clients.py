@@ -11,7 +11,7 @@ try:
 except ImportError:  # pragma: no cover
     APIConnectionError = APITimeoutError = Exception
 
-from app.config import AISettings
+from src.services.config import AISettings
 
 
 SECTION_MARKER = "# <<SECTION_BREAK>>"
