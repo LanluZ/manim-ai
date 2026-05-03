@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from core.events import Event
 
@@ -23,7 +22,7 @@ class TaskContext:
     """任务上下文：存储任务状态和累积数据"""
 
     prompt: str
-    workspace: str
+    workspace: Path
     job_dir: Path | None = None
 
     # 规划相关
