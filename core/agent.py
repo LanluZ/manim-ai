@@ -37,5 +37,9 @@ class Agent(ABC):
         """
         pass
 
+    def _get_ai_mode(self, context: TaskContext) -> str:
+        """获取AI模式，子类可覆盖"""
+        return getattr(context, 'ai_mode', 'deepseek')
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"

@@ -64,10 +64,6 @@ class PlannerAgent(Agent):
                 correlation_id=event.correlation_id,
             )
 
-    def _get_ai_mode(self, context: TaskContext) -> str:
-        """获取AI模式"""
-        return getattr(context, 'ai_mode', 'deepseek')
-
     def _parse_tasks(self, response: str) -> list[str]:
         """解析AI返回的任务列表"""
         try:

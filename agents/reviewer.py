@@ -56,7 +56,8 @@ class ReviewerAgent(Agent):
                     payload={"feedback": feedback},
                     correlation_id=event.correlation_id,
                 )
-        except Exception:
+        except Exception as exc:
+            # AI审查失败不影响流程，静态检查已通过
             pass
 
         return Event(

@@ -135,5 +135,3 @@ class CoderAgent(Agent):
                 correlation_id=event.correlation_id,
             )
 
-    def _get_ai_mode(self, context: TaskContext) -> str:
-        return getattr(context, 'ai_mode', 'deepseek')
