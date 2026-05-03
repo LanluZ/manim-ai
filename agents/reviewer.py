@@ -88,7 +88,7 @@ class ReviewerAgent(Agent):
         from app.ai_clients import generate_manim_code
 
         prompt = REVIEWER_PROMPT.format(code=code)
-        ai_mode = getattr(context, 'ai_mode', 'deepseek')
+        ai_mode = self._get_ai_mode(context)
 
         _, response = generate_manim_code(
             settings=context.ai_settings,
