@@ -121,7 +121,7 @@ manimai/
 | **AI 接口** | DeepSeek, Gemini (OpenAI SDK 兼容) |
 | **异步框架** | asyncio |
 | **数据存储** | SQLite |
-| **事件驱动** | 自研 EventBus |
+| **事件驱动** | EventBus |
 
 ## Agent 说明
 
