@@ -1,10 +1,10 @@
-# Manimai - LLM 驱动的 Manim 动画生成器
+# Manimai - AI 多Agent驱动的 Manim 动画生成器
 
 <div align="center">
 
-![](/docx/img/001.apng)
+![](/assets/img/001.apng)
 
-一个简单的程序 允许使用 LLM 轻松创建3B1B风格的动画
+**多Agent协作系统**，通过 Planner → Coder → Reviewer → Renderer 自主生成3B1B风格的数学动画
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![Manim](https://img.shields.io/badge/Manim-0.18+-orange.svg)](https://www.manim.community/)
@@ -20,103 +20,150 @@
 - LaTeX 发行版（用于数学公式渲染）
 - FFmpeg（用于视频处理）
 
-### 安装步骤
+### 安装
 
-1. **克隆仓库**
-   ```bash
-   git clone https://github.com/yourusername/manimai.git
-   cd manimai
-   ```
-
-2. **安装依赖**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **配置 AI API**
-   
-   在应用设置中配置你的 AI API 密钥：
-   - **DeepSeek**: 需要 API Key 和 Base URL
-   - **Gemini**: 需要 API Key
-
-4. **运行应用**
-   ```bash
-   python main.py
-   ```
-
-## 使用指南
-
-### 基本工作流程
-
-1. **创建工作区** - 在"工作区"菜单中创建新的工作区
-2. **输入描述** - 在文本框中描述你想要的动画效果
-3. **生成动画** - 点击"生成并播放"按钮
-4. **查看结果** - 动画将自动渲染并播放
-5. **继续添加** - 在现有动画基础上继续添加新的场景
-
-### 示例提示词
-
-```
-创建一个3x3矩阵，然后展示它的转置
+```bash
+git clone https://github.com/yourusername/manimai.git
+cd manimai
+pip install -r requirements.txt
 ```
 
-## 配置说明
+### 运行
 
-### 输出参数
+**GUI 模式（默认）：**
+```bash
+python main.py
+```
 
-- **分辨率**: 320x240 到 3840x2160
-- **帧率**: 1-120 FPS
-- **质量**: l (低) / m (中) / h (高) / k (4K)
+**CLI 模式：**
+```bash
+python main.py --cli "创建一个旋转的立方体"
+```
 
-### AI 模型配置
+## 多Agent架构
 
-#### DeepSeek
-- **API Key**: 从 [DeepSeek 官网](https://platform.deepseek.com/) 获取
-- **API 地址**: 默认为 `https://api.deepseek.com`
-- **模型名称**: 默认为 `deepseek-chat`
-
-#### Gemini
-- **API Key**: 从 [Google AI Studio](https://makersuite.google.com/) 获取
-- **模型名称**: 默认为 `gemini-1.5-flash`
+```
+用户输入
+    │
+    ▼
+┌─────────────┐
+│   Planner   │  分析需求，分解任务
+└──────┬──────┘
+       │ PLAN_CREATED
+       ▼
+┌─────────────┐
+│    Coder    │  生成 Manim 代码
+└──────┬──────┘
+       │ CODE_GENERATED
+       ▼
+┌─────────────┐
+│   Reviewer  │  审查代码质量
+└──────┬──────┘
+       │ CODE_APPROVED ──┐
+       │                 │
+       │ CODE_NEEDS_FIX  │ (循环修复)
+       ▼                 │
+┌─────────────┐           │
+│    Coder    │◄──────────┘
+└─────────────┘
+       │ CODE_APPROVED
+       ▼
+┌─────────────┐
+│   Renderer  │  渲染视频
+└──────┬──────┘
+       │ RENDER_COMPLETED
+       ▼
+    输出视频
+```
 
 ## 项目结构
 
 ```
 manimai/
-├── app/
-│   ├── __init__.py
-│   ├── ai_clients.py      # AI 客户端接口
-│   ├── config.py          # 配置定义
-│   ├── database.py        # 数据库操作
-│   ├── manim_runner.py    # Manim 渲染引擎
-│   ├── ui_main.py         # Qt GUI 界面
-│   └── workers.py         # 后台任务线程
-├── data/
-│   ├── jobs/              # 工作区数据（自动生成）
-│   └── manimai.db         # 数据库文件（自动生成）
-├── main.py                # 应用入口
-├── requirements.txt       # 依赖清单
-├── .gitignore
-└── README.md
+├── src/
+│   ├── core/                  # 核心框架
+│   │   ├── events.py          # 事件定义
+│   │   ├── message_bus.py     # 异步事件总线
+│   │   ├── agent.py           # Agent 基类
+│   │   ├── context.py         # 任务上下文
+│   │   └── coordinator.py     # 中心协调器
+│   ├── agents/                # Agent 实现
+│   │   ├── planner.py         # 需求分析 Agent
+│   │   ├── coder.py           # 代码生成 Agent
+│   │   ├── reviewer.py        # 代码审查 Agent
+│   │   └── renderer.py        # 渲染执行 Agent
+│   ├── services/              # 服务层
+│   │   ├── ai_clients.py      # AI 客户端（DeepSeek/Gemini）
+│   │   ├── config.py          # 配置定义
+│   │   ├── database.py        # 数据库操作
+│   │   └── manim_runner.py    # Manim 渲染引擎
+│   ├── gui/                   # GUI 界面
+│   │   ├── main.py            # GUI 入口
+│   │   ├── main_window.py     # 主窗口
+│   │   └── workers.py         # 后台线程
+│   └── cli/                   # CLI 界面
+│       └── main.py            # CLI 入口
+├── tests/                     # 单元测试
+├── data/                      # 运行时数据
+│   ├── jobs/                  # 工作区数据
+│   └── manimai.db             # SQLite 数据库
+├── assets/                    # 静态资源
+├── main.py                    # 统一入口
+└── requirements.txt           # 依赖清单
 ```
 
 ## 技术栈
 
-- **GUI 框架**: PySide6 (Qt for Python)
-- **动画引擎**: Manim Community Edition
-- **AI 接口**: OpenAI SDK, Requests, HTTPX
-- **数据存储**: SQLite
-- **并发处理**: QThread
+| 组件 | 技术 |
+|------|------|
+| **GUI 框架** | PySide6 (Qt for Python) |
+| **动画引擎** | Manim Community Edition |
+| **AI 接口** | DeepSeek, Gemini (OpenAI SDK 兼容) |
+| **异步框架** | asyncio |
+| **数据存储** | SQLite |
+| **事件驱动** | 自研 EventBus |
 
-## 界面预览
+## Agent 说明
 
-- **夜间主题** - 现代化深色界面，参考 IntelliJ IDEA 设计
-- **三栏布局** - 输入区、播放器、设置/历史侧边栏
-- **分段历史** - 可视化展示每个动画分段
+| Agent | 职责 | 输入事件 | 输出事件 |
+|-------|------|----------|----------|
+| **Planner** | 分析需求，分解为任务列表 | TASK_RECEIVED | PLAN_CREATED |
+| **Coder** | 生成或修复 Manim 代码 | PLAN_CREATED, CODE_NEEDS_FIX | CODE_GENERATED |
+| **Reviewer** | 静态检查 + AI 审查代码 | CODE_GENERATED | CODE_APPROVED, CODE_NEEDS_FIX |
+| **Renderer** | 执行 Manim 渲染 | CODE_APPROVED | RENDER_COMPLETED, CODE_NEEDS_FIX |
 
-## 贡献
+## 配置
 
-欢迎提交 Issue 和 Pull Request！
+### AI 模型
+
+在 GUI 设置或通过数据库配置：
+
+```python
+# DeepSeek
+deepseek_api_key = "your-api-key"
+deepseek_base_url = "https://api.deepseek.com"
+deepseek_model = "deepseek-chat"
+
+# Gemini
+gemini_api_key = "your-api-key"
+gemini_model = "gemini-1.5-flash"
+```
+
+### 输出参数
+
+- **分辨率**: 320x240 ~ 3840x2160
+- **帧率**: 1-120 FPS
+- **质量**: `l` (低) / `m` (中) / `h` (高) / `k` (4K)
+
+## 示例
+
+```bash
+# CLI 模式生成动画
+python main.py --cli "创建一个3x3矩阵，展示它的转置过程"
+
+# 指定输出参数
+python main.py --cli --width 1280 --height 720 --fps 30 "旋转的球体"
+```
 
 ## 许可证
 
@@ -125,8 +172,5 @@ MIT License
 ## 相关链接
 
 - [Manim Community](https://www.manim.community/)
-- [PySide6 文档](https://doc.qt.io/qtforpython/)
 - [DeepSeek API](https://platform.deepseek.com/)
 - [Google Gemini](https://ai.google.dev/)
-
----
