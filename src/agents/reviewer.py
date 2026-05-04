@@ -39,18 +39,25 @@ class ReviewerAgent(Agent):
 
         if not static_result["approved"]:
             context.review_feedback = "; ".join(static_result["issues"])
+            self._log(context, f"静态审查不通过: {context.review_feedback}")
             return Event(
                 type=EventType.CODE_NEEDS_FIX,
                 payload={"feedback": context.review_feedback},
                 correlation_id=event.correlation_id,
             )
 
+        self._log(context, "静态审查通过，进行AI审查...")
+
         # AI审查（可选）
         try:
             ai_result = await self._ai_review(code, context)
             if not ai_result.get("approved", True):
                 feedback = ai_result.get("suggested_fix", "代码需要修复")
+                issues = ai_result.get("issues", [])
+                if issues:
+                    feedback = f"{feedback} | 问题: {'; '.join(issues)}"
                 context.review_feedback = feedback
+                self._log(context, f"AI审查不通过: {feedback}")
                 return Event(
                     type=EventType.CODE_NEEDS_FIX,
                     payload={"feedback": feedback},
@@ -58,13 +65,20 @@ class ReviewerAgent(Agent):
                 )
         except Exception as exc:
             # AI审查失败不影响流程，静态检查已通过
-            pass
+            self._log(context, f"AI审查异常（跳过）: {exc}")
 
+        self._log(context, "审查通过")
         return Event(
             type=EventType.CODE_APPROVED,
             payload={"code": code},
             correlation_id=event.correlation_id,
         )
+
+    def _log(self, context: TaskContext, message: str) -> None:
+        """输出审查日志"""
+        callback = getattr(context, "progress_callback", None)
+        if callback:
+            callback(f"[Reviewer] {message}")
 
     def _static_review(self, code: str) -> dict:
         """静态代码审查"""
@@ -85,16 +99,15 @@ class ReviewerAgent(Agent):
 
     async def _ai_review(self, code: str, context: TaskContext) -> dict:
         """AI增强审查"""
-        from src.services.ai_clients import generate_manim_code
+        from src.services.ai_clients import call_ai
 
         prompt = REVIEWER_PROMPT.format(code=code)
         ai_mode = self._get_ai_mode(context)
 
-        _, response = generate_manim_code(
+        response = call_ai(
             settings=context.ai_settings,
             mode=ai_mode,
             prompt=prompt,
-            previous_code="",
             timeout=context.agent_config.ai_timeout // 2,
         )
 

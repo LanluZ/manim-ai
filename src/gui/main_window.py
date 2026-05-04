@@ -36,7 +36,7 @@ from PySide6.QtWidgets import (
 
 from src.services.config import AISettings, RenderSettings
 from src.services.database import Database, Segment
-from src.gui.workers import RenderWorker, start_worker, TaskResult
+from src.gui.workers import AgentWorker, start_worker, GuiTaskResult
 
 
 @dataclass
@@ -922,7 +922,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "提示", "必须指定 Gemini 模型")
             self.generate_btn.setEnabled(True)
             return
-        worker = RenderWorker(ai_settings, ai_mode, prompt, previous_code, settings, segment_dir)
+        worker = AgentWorker(ai_settings, ai_mode, prompt, previous_code, settings, segment_dir)
         self._current_worker = worker
         worker.started.connect(lambda: self.status.showMessage("任务开始..."))
         worker.progress.connect(self.status.showMessage)
@@ -948,19 +948,19 @@ class MainWindow(QMainWindow):
         self._current_worker = None
         self._current_segment = None
 
-    def _on_finished(self, result: TaskResult) -> None:
+    def _on_finished(self, result: GuiTaskResult) -> None:
         self.status.showMessage("开始播放")
-        self._log(f"渲染完成，输出: {result.render_result.video_path}")
-        self._log(f"分段视频: {len(result.render_result.section_videos)} 个")
-        
+        self._log(f"渲染完成，输出: {result.video_path}")
+        self._log(f"分段视频: {len(result.section_videos)} 个")
+
         if self._current_segment is not None:
             # 第一轮播放全帧视频，其余轮播放分段
             if self._current_segment.segment_index == 0:
-                section_video_path = str(result.render_result.video_path)
+                section_video_path = str(result.video_path)
             else:
                 section_video_path = ""
-                if result.render_result.section_videos:
-                    sorted_videos = sorted(result.render_result.section_videos, key=lambda p: p.name)
+                if result.section_videos:
+                    sorted_videos = sorted(result.section_videos, key=lambda p: p.name)
                     idx = self._current_segment.segment_index
                     if idx < len(sorted_videos):
                         section_video_path = str(sorted_videos[idx])

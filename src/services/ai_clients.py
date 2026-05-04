@@ -55,9 +55,20 @@ def generate_manim_code(
         raise AIError(f"AI {name} 接口调用失败: {exc}") from exc
 
 
+def call_ai(
+    settings: AISettings,
+    mode: str,
+    prompt: str,
+    timeout: int = 60,
+) -> str:
+    """通用 AI 调用：直接发送 prompt，不经过代码生成的 prompt 包装"""
+    name, provider_func = _resolve_provider(mode)
+    return provider_func(settings, prompt, "", None, timeout, raw_prompt=True)
+
+
 def _resolve_provider(
     mode: str,
-) -> tuple[str, Callable[[AISettings, str, str, Callable[[str], None] | None, int], str]]:
+) -> tuple[str, Callable[..., str]]:
     if mode == "deepseek":
         return "deepseek", _call_deepseek
     if mode == "gemini":
@@ -71,6 +82,7 @@ def _call_deepseek(
     previous_code: str,
     debug: Callable[[str], None] | None,
     timeout: int,
+    raw_prompt: bool = False,
 ) -> str:
     if not settings.deepseek_api_key:
         raise AIError("DeepSeek API Key 未配置")
@@ -83,6 +95,7 @@ def _call_deepseek(
         debug(f"DeepSeek 请求：{url} | model={settings.deepseek_model}")
     if debug:
         debug(f"DeepSeek 请求已发送，超时 {timeout}s")
+    user_content = prompt if raw_prompt else build_prompt(prompt, previous_code)
     timeout_config = httpx.Timeout(float(timeout))
     transport = httpx.HTTPTransport(retries=3)
     with httpx.Client(
@@ -98,12 +111,17 @@ def _call_deepseek(
             http_client=http_client,
         )
         try:
+            messages = (
+                [{"role": "user", "content": user_content}]
+                if raw_prompt
+                else [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_content},
+                ]
+            )
             response = client.chat.completions.create(
                 model=settings.deepseek_model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": build_prompt(prompt, previous_code)},
-                ],
+                messages=messages,
                 temperature=0.2,
             )
         except (APIConnectionError, APITimeoutError) as exc:
@@ -128,6 +146,7 @@ def _call_gemini(
     previous_code: str,
     debug: Callable[[str], None] | None,
     timeout: int,
+    raw_prompt: bool = False,
 ) -> str:
     if not settings.gemini_api_key:
         raise AIError("Gemini API Key 未配置")
@@ -138,11 +157,13 @@ def _call_gemini(
     if debug:
         debug(f"Gemini 请求：{url} | model={settings.gemini_model}")
     params = {"key": settings.gemini_api_key}
+    user_content = prompt if raw_prompt else build_prompt(prompt, previous_code)
+    full_content = user_content if raw_prompt else f"{SYSTEM_PROMPT}\n{user_content}"
     payload = {
         "contents": [
             {
                 "role": "user",
-                "parts": [{"text": f"{SYSTEM_PROMPT}\n{build_prompt(prompt, previous_code)}"}],
+                "parts": [{"text": full_content}],
             }
         ],
         "generationConfig": {"temperature": 0.2},

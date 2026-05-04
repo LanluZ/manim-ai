@@ -75,6 +75,7 @@ class Coordinator:
         context.ai_settings = self.ai_settings  # type: ignore[attr-defined]
         context.render_settings = self.render_settings  # type: ignore[attr-defined]
         context.agent_config = self.agent_config  # type: ignore[attr-defined]
+        context.progress_callback = self.progress_callback  # type: ignore[attr-defined]
 
         # 初始事件
         event = Event(
@@ -86,7 +87,7 @@ class Coordinator:
         self._log(f"开始任务: {prompt}")
 
         # 最终状态
-        final_events = {EventType.TASK_COMPLETED, EventType.TASK_FAILED}
+        final_events = {EventType.TASK_COMPLETED, EventType.TASK_FAILED, EventType.RENDER_COMPLETED}
 
         max_loop_iterations = 100  # 安全限制，防止无限循环
         loop_count = 0
@@ -116,8 +117,8 @@ class Coordinator:
 
             context.add_event(event)
 
-            if event.type == EventType.TASK_COMPLETED:
-                self._log("任务完成")
+            if event.type in (EventType.TASK_COMPLETED, EventType.RENDER_COMPLETED):
+                self._log("任务完成: 渲染成功")
                 result = context.result or TaskResult(
                     success=True,
                     video_path=event.payload.get("video_path", ""),
