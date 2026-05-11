@@ -124,7 +124,7 @@ async def _run_one_case_with_timeout(
             ),
             timeout=case_timeout,
         )
-    except TimeoutError:
+    except (TimeoutError, asyncio.TimeoutError):
         return PromptRunRecord(
             variant=variant.name,
             prompt_id=case.id,
