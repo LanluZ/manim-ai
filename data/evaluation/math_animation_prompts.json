@@ -1,0 +1,202 @@
+[
+  {
+    "id": "function-001",
+    "category": "function_graphs",
+    "prompt": "绘制 y=sin(x) 与 y=cos(x) 在 [-2π, 2π] 上的图像，动态标出它们的交点。"
+  },
+  {
+    "id": "function-002",
+    "category": "function_graphs",
+    "prompt": "展示二次函数 y=x^2-4x+3 从标准式变形成顶点式，并在坐标系中标出顶点和零点。"
+  },
+  {
+    "id": "function-003",
+    "category": "function_graphs",
+    "prompt": "动画展示指数函数 y=2^x 和对数函数 y=log2(x) 关于 y=x 对称。"
+  },
+  {
+    "id": "function-004",
+    "category": "function_graphs",
+    "prompt": "绘制分段函数：x<0 时 y=-x，x>=0 时 y=x^2，并突出 x=0 处的连续性。"
+  },
+  {
+    "id": "function-005",
+    "category": "function_graphs",
+    "prompt": "展示参数 a 从 0.5 变到 3 时，函数 y=a sin(x) 的振幅变化。"
+  },
+  {
+    "id": "function-006",
+    "category": "function_graphs",
+    "prompt": "绘制 y=1/x 的双曲线，标出 x=0 和 y=0 两条渐近线。"
+  },
+  {
+    "id": "calculus-001",
+    "category": "calculus",
+    "prompt": "用割线逐渐逼近切线的动画解释函数 y=x^2 在 x=1 处的导数。"
+  },
+  {
+    "id": "calculus-002",
+    "category": "calculus",
+    "prompt": "用矩形面积逐渐逼近曲线 y=x^2 在 [0,2] 上的定积分。"
+  },
+  {
+    "id": "calculus-003",
+    "category": "calculus",
+    "prompt": "展示函数 y=x^3-3x 的导数符号如何决定单调区间。"
+  },
+  {
+    "id": "calculus-004",
+    "category": "calculus",
+    "prompt": "动画展示泰勒展开用 1、2、3、5 阶多项式逐步逼近 sin(x)。"
+  },
+  {
+    "id": "geometry-001",
+    "category": "geometry",
+    "prompt": "构造一个三角形，动态展示三条中线交于重心，并标出 2:1 的比例。"
+  },
+  {
+    "id": "geometry-002",
+    "category": "geometry",
+    "prompt": "展示勾股定理：在直角三角形三边上生成正方形，并通过面积标注说明 a^2+b^2=c^2。"
+  },
+  {
+    "id": "geometry-003",
+    "category": "geometry",
+    "prompt": "动画展示圆周角定理：同弧所对圆周角相等。"
+  },
+  {
+    "id": "geometry-004",
+    "category": "geometry",
+    "prompt": "绘制正六边形，展示它可以分解为 6 个全等的等边三角形。"
+  },
+  {
+    "id": "geometry-005",
+    "category": "geometry",
+    "prompt": "展示三角形外接圆的构造：画两条边的垂直平分线并找到圆心。"
+  },
+  {
+    "id": "geometry-006",
+    "category": "geometry",
+    "prompt": "动画展示平移、旋转、缩放三个几何变换对同一个三角形的影响。"
+  },
+  {
+    "id": "linear-001",
+    "category": "linear_algebra",
+    "prompt": "展示二维向量 (2,1) 与 (-1,2) 的加法，用平行四边形法则得到结果向量。"
+  },
+  {
+    "id": "linear-002",
+    "category": "linear_algebra",
+    "prompt": "动画展示矩阵 [[2,0],[0,1]] 对单位正方形的线性变换。"
+  },
+  {
+    "id": "linear-003",
+    "category": "linear_algebra",
+    "prompt": "展示剪切矩阵 [[1,1],[0,1]] 如何改变二维网格。"
+  },
+  {
+    "id": "linear-004",
+    "category": "linear_algebra",
+    "prompt": "解释特征向量：展示矩阵变换下一个方向只被拉伸不被旋转。"
+  },
+  {
+    "id": "linear-005",
+    "category": "linear_algebra",
+    "prompt": "展示两个二维向量的点积如何等于投影长度乘以另一个向量长度。"
+  },
+  {
+    "id": "linear-006",
+    "category": "linear_algebra",
+    "prompt": "动画展示 2x2 矩阵行列式作为单位面积缩放因子。"
+  },
+  {
+    "id": "probability-001",
+    "category": "probability_statistics",
+    "prompt": "展示掷两枚骰子的样本空间，并高亮和为 7 的所有结果。"
+  },
+  {
+    "id": "probability-002",
+    "category": "probability_statistics",
+    "prompt": "用柱状图动画展示伯努利试验次数增加时二项分布的形状变化。"
+  },
+  {
+    "id": "probability-003",
+    "category": "probability_statistics",
+    "prompt": "绘制标准正态分布曲线，动态填充均值左右一个标准差内的面积。"
+  },
+  {
+    "id": "probability-004",
+    "category": "probability_statistics",
+    "prompt": "动画展示大数定律：抛硬币次数增加时正面比例逐渐接近 0.5。"
+  },
+  {
+    "id": "probability-005",
+    "category": "probability_statistics",
+    "prompt": "用散点图和回归直线展示相关系数为正的样本数据。"
+  },
+  {
+    "id": "probability-006",
+    "category": "probability_statistics",
+    "prompt": "展示条件概率 P(A|B)：先画全集、事件 A、事件 B，再突出 A 与 B 的交集。"
+  },
+  {
+    "id": "number-001",
+    "category": "number_theory",
+    "prompt": "用数轴动画展示欧几里得算法求 gcd(48,18) 的过程。"
+  },
+  {
+    "id": "number-002",
+    "category": "number_theory",
+    "prompt": "展示质数筛法：从 1 到 50 的整数表中逐步划掉合数。"
+  },
+  {
+    "id": "number-003",
+    "category": "number_theory",
+    "prompt": "动画展示模运算时钟：解释 17 mod 5 等于 2。"
+  },
+  {
+    "id": "number-004",
+    "category": "number_theory",
+    "prompt": "用网格点展示平方数 1、4、9、16 的几何意义。"
+  },
+  {
+    "id": "discrete-001",
+    "category": "discrete_math",
+    "prompt": "展示一个有向图的拓扑排序过程，每一步移除入度为 0 的节点。"
+  },
+  {
+    "id": "discrete-002",
+    "category": "discrete_math",
+    "prompt": "动画展示二叉树的前序、中序、后序遍历顺序。"
+  },
+  {
+    "id": "discrete-003",
+    "category": "discrete_math",
+    "prompt": "用集合图展示德摩根律：非(A并B) 等于 非A交非B。"
+  },
+  {
+    "id": "discrete-004",
+    "category": "discrete_math",
+    "prompt": "展示排列组合：从 5 个点中选择 2 个点连线，共有 C(5,2) 条线段。"
+  },
+  {
+    "id": "multivariable-001",
+    "category": "multivariable",
+    "prompt": "绘制二维等高线图，展示函数 z=x^2+y^2 的高度从中心向外增加。"
+  },
+  {
+    "id": "multivariable-002",
+    "category": "multivariable",
+    "prompt": "动画展示梯度向量总是指向函数增长最快的方向。"
+  },
+  {
+    "id": "complex-001",
+    "category": "complex_numbers",
+    "prompt": "在复平面中展示复数 1+i 乘以 i 后旋转 90 度。"
+  },
+  {
+    "id": "complex-002",
+    "category": "complex_numbers",
+    "prompt": "动画展示欧拉公式 e^{iθ}=cosθ+i sinθ 与单位圆的关系。"
+  }
+]

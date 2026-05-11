@@ -8,5 +8,6 @@ httpx>=0.25.0
 requests>=2.31.0
 
 # Development tools (optional)
+pytest>=8.0.0
 # nuitka  # For building standalone executables
 # ordered-set  # For optimized builds

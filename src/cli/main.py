@@ -79,6 +79,7 @@ async def run_async(args: argparse.Namespace) -> int:
         agents=agents,
         ai_settings=ai_settings,
         render_settings=render_settings,
+        ai_mode=args.ai_mode,
         progress_callback=progress,
     )
 

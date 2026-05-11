@@ -46,6 +46,9 @@ class PlannerAgent(Agent):
                 prompt=full_prompt,
                 previous_code="",
                 timeout=context.agent_config.ai_timeout,
+                agent_config=context.agent_config,
+                metrics=getattr(context, "metrics", None),
+                provider_registry=getattr(context, "provider_registry", None),
             )
 
             # 解析JSON响应

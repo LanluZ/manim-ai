@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from src.services.config import AgentConfig, AISettings, RenderSettings
+from src.services.providers import ProviderRegistry
 from src.core.agent import Agent
 from src.core.context import TaskContext, TaskResult
 from src.core.events import Event, EventType
@@ -29,12 +30,16 @@ class Coordinator:
         ai_settings: AISettings,
         render_settings: RenderSettings,
         agent_config: AgentConfig | None = None,
+        ai_mode: str = "deepseek",
+        provider_registry: ProviderRegistry | None = None,
         progress_callback: Callable[[str], None] | None = None,
     ) -> None:
         self.agents = agents
         self.ai_settings = ai_settings
         self.render_settings = render_settings
         self.agent_config = agent_config or AgentConfig()
+        self.ai_mode = ai_mode
+        self.provider_registry = provider_registry
         self.progress_callback = progress_callback
         self.event_bus = EventBus()
         self._register_agents()
@@ -76,6 +81,8 @@ class Coordinator:
         context.render_settings = self.render_settings  # type: ignore[attr-defined]
         context.agent_config = self.agent_config  # type: ignore[attr-defined]
         context.progress_callback = self.progress_callback  # type: ignore[attr-defined]
+        context.ai_mode = self.ai_mode  # type: ignore[attr-defined]
+        context.provider_registry = self.provider_registry  # type: ignore[attr-defined]
 
         # 初始事件
         event = Event(
@@ -113,33 +120,51 @@ class Coordinator:
                     self._log(f"警告: 没有Agent处理事件 {event.type.value}")
                     break
 
+                if (
+                    result_event.type == EventType.CODE_GENERATED
+                    and not self.agent_config.enable_reviewer
+                ):
+                    self._log("Reviewer 已关闭，跳过审查")
+                    context.add_event(result_event)
+                    result_event = Event(
+                        type=EventType.CODE_APPROVED,
+                        payload={"code": result_event.payload.get("code", context.current_code)},
+                        correlation_id=result_event.correlation_id,
+                    )
+
                 event = result_event
 
             context.add_event(event)
 
             if event.type in (EventType.TASK_COMPLETED, EventType.RENDER_COMPLETED):
                 self._log("任务完成: 渲染成功")
+                context.metrics.finish(True)
                 result = context.result or TaskResult(
                     success=True,
                     video_path=event.payload.get("video_path", ""),
                     code=context.current_code,
                 )
                 result.events = context.events
+                result.metrics = context.metrics
                 return result
             else:
                 self._log(f"任务失败: {event.payload.get('error', '未知错误')}")
+                context.metrics.finish(False)
                 result = TaskResult(
                     success=False,
                     error=event.payload.get("error", "任务失败"),
                     code=context.current_code,
                 )
                 result.events = context.events
+                result.metrics = context.metrics
                 return result
 
         except Exception as exc:
             self._log(f"协调器异常: {exc}")
+            context.metrics.finish(False)
             return TaskResult(
                 success=False,
                 error=str(exc),
                 events=context.events,
+                metrics=context.metrics,
             )

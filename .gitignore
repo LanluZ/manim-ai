@@ -41,7 +41,8 @@ env/
 data/jobs/*/
 !data/jobs/.gitkeep
 data/logs/
-docs/superpowers/
+data/evaluation/runs/
+docs
 build/
 *.db
 *.sqlite

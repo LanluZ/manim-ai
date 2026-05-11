@@ -12,6 +12,9 @@ except ImportError:  # pragma: no cover
     APIConnectionError = APITimeoutError = Exception
 
 from src.services.config import AISettings
+from src.services.config import AgentConfig
+from src.core.metrics import TaskMetrics
+from src.services.providers import ProviderRegistry, ProviderRequest, ProviderRouter, ProviderError
 
 
 SECTION_MARKER = "# <<SECTION_BREAK>>"
@@ -44,15 +47,34 @@ def generate_manim_code(
     previous_code: str,
     debug: Callable[[str], None] | None = None,
     timeout: int = 60,
+    agent_config: AgentConfig | None = None,
+    metrics: TaskMetrics | None = None,
+    provider_registry: ProviderRegistry | None = None,
 ) -> tuple[str, str]:
-    name, provider = _resolve_provider(mode)
+    user_content = build_prompt(prompt, previous_code)
+    request = ProviderRequest(
+        prompt=user_content,
+        system_prompt=SYSTEM_PROMPT,
+        timeout=timeout,
+    )
+    config = agent_config or AgentConfig()
+    records = metrics.provider_calls if metrics is not None else None
     try:
-        code = provider(settings, prompt, previous_code, debug, timeout)
-        return name, code
-    except Exception as exc:  # noqa: BLE001
         if debug:
-            debug(f"AI {name} 调用失败：{exc}")
-        raise AIError(f"AI {name} 接口调用失败: {exc}") from exc
+            debug(f"AI 请求：provider={mode} timeout={timeout}s")
+        response = ProviderRouter(provider_registry, config).complete(
+            request,
+            settings=settings,
+            preferred_provider=mode,
+            records=records,
+        )
+        if debug:
+            debug(f"AI 返回成功：provider={response.provider}")
+        return response.provider, response.content
+    except ProviderError as exc:
+        if debug:
+            debug(f"AI {exc.provider} 调用失败：{exc}")
+        raise AIError(f"AI {exc.provider} 接口调用失败: {exc}") from exc
 
 
 def call_ai(
@@ -60,10 +82,23 @@ def call_ai(
     mode: str,
     prompt: str,
     timeout: int = 60,
+    agent_config: AgentConfig | None = None,
+    metrics: TaskMetrics | None = None,
+    provider_registry: ProviderRegistry | None = None,
 ) -> str:
     """通用 AI 调用：直接发送 prompt，不经过代码生成的 prompt 包装"""
-    name, provider_func = _resolve_provider(mode)
-    return provider_func(settings, prompt, "", None, timeout, raw_prompt=True)
+    config = agent_config or AgentConfig()
+    records = metrics.provider_calls if metrics is not None else None
+    try:
+        response = ProviderRouter(provider_registry, config).complete(
+            ProviderRequest(prompt=prompt, system_prompt="", timeout=timeout),
+            settings=settings,
+            preferred_provider=mode,
+            records=records,
+        )
+        return response.content
+    except ProviderError as exc:
+        raise AIError(f"AI {exc.provider} 接口调用失败: {exc}") from exc
 
 
 def _resolve_provider(

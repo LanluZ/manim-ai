@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -45,3 +45,14 @@ class AgentConfig:
     ai_timeout: int = 60         # AI 调用超时（秒）
     render_timeout: int = 600    # 渲染超时（秒）
     temperature: float = 0.2     # AI 生成温度
+    enable_reviewer: bool = True
+    enable_static_review: bool = True
+    enable_auto_fix: bool = True
+    provider_fallback_order: tuple[str, ...] = ("deepseek", "gemini")
+    max_provider_retries: int = 1
+    provider_prices_per_1k_tokens: dict[str, tuple[float, float]] = field(
+        default_factory=lambda: {
+            "deepseek": (0.00014, 0.00028),
+            "gemini": (0.000075, 0.0003),
+        }
+    )

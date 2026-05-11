@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from time import perf_counter
 
+from src.core.metrics import RenderAttempt
 from src.services.manim_runner import RenderError, render_manim_scene
 from src.core.agent import Agent
 from src.core.context import TaskContext, TaskResult
@@ -18,6 +20,7 @@ class RendererAgent(Agent):
     async def handle(self, event: Event, context: TaskContext) -> Event:
         """执行渲染"""
         code = event.payload["code"]
+        started = perf_counter()
 
         try:
             job_dir = context.job_dir or Path("data/jobs/default")
@@ -29,6 +32,11 @@ class RendererAgent(Agent):
                 job_dir=job_dir,
                 logger=None,
             )
+            context.metrics.render_attempts.append(
+                RenderAttempt(success=True, duration_seconds=perf_counter() - started)
+            )
+            if context.metrics.first_render_success is None:
+                context.metrics.first_render_success = True
 
             context.result = TaskResult(
                 success=True,
@@ -48,8 +56,19 @@ class RendererAgent(Agent):
 
         except RenderError as exc:
             error_msg = str(exc)
+            context.metrics.render_attempts.append(
+                RenderAttempt(
+                    success=False,
+                    duration_seconds=perf_counter() - started,
+                    error=error_msg,
+                )
+            )
+            if context.metrics.first_render_success is None:
+                context.metrics.first_render_success = False
 
-            if "Scene 子类" in error_msg or "SyntaxError" in error_msg:
+            agent_config = getattr(context, "agent_config", None)
+            enable_auto_fix = getattr(agent_config, "enable_auto_fix", True)
+            if enable_auto_fix and _is_repairable_render_error(error_msg):
                 return Event(
                     type=EventType.CODE_NEEDS_FIX,
                     payload={"feedback": f"渲染错误（可修复）: {error_msg}"},
@@ -63,8 +82,31 @@ class RendererAgent(Agent):
             )
 
         except Exception as exc:
+            context.metrics.render_attempts.append(
+                RenderAttempt(
+                    success=False,
+                    duration_seconds=perf_counter() - started,
+                    error=str(exc),
+                )
+            )
+            if context.metrics.first_render_success is None:
+                context.metrics.first_render_success = False
             return Event(
                 type=EventType.TASK_FAILED,
                 payload={"error": f"渲染异常: {exc}"},
                 correlation_id=event.correlation_id,
             )
+
+
+def _is_repairable_render_error(error_msg: str) -> bool:
+    repairable_markers = (
+        "Scene 子类",
+        "SyntaxError",
+        "NameError",
+        "AttributeError",
+        "TypeError",
+        "ValueError",
+        "ImportError",
+        "ModuleNotFoundError",
+    )
+    return any(marker in error_msg for marker in repairable_markers)

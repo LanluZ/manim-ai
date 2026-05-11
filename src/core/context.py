@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.core.events import Event
+from src.core.metrics import TaskMetrics
 
 
 @dataclass
@@ -15,6 +16,7 @@ class TaskResult:
     code: str = ""
     error: str = ""
     events: list[Event] = field(default_factory=list)
+    metrics: TaskMetrics = field(default_factory=TaskMetrics)
 
 
 @dataclass
@@ -42,6 +44,9 @@ class TaskContext:
 
     # 结果
     result: TaskResult | None = None
+
+    # 指标
+    metrics: TaskMetrics = field(default_factory=TaskMetrics)
 
     def add_event(self, event: Event) -> None:
         """添加事件到历史"""

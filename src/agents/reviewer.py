@@ -34,8 +34,12 @@ class ReviewerAgent(Agent):
     async def handle(self, event: Event, context: TaskContext) -> Event:
         """审查代码"""
         code = event.payload["code"]
+        agent_config = getattr(context, "agent_config", None)
+        enable_static_review = getattr(agent_config, "enable_static_review", True)
 
-        static_result = self._static_review(code)
+        static_result = {"approved": True, "issues": []}
+        if enable_static_review:
+            static_result = self._static_review(code)
 
         if not static_result["approved"]:
             context.review_feedback = "; ".join(static_result["issues"])
@@ -46,7 +50,10 @@ class ReviewerAgent(Agent):
                 correlation_id=event.correlation_id,
             )
 
-        self._log(context, "静态审查通过，进行AI审查...")
+        if enable_static_review:
+            self._log(context, "静态审查通过，进行AI审查...")
+        else:
+            self._log(context, "静态审查已关闭，进行AI审查...")
 
         # AI审查（可选）
         try:
@@ -109,6 +116,9 @@ class ReviewerAgent(Agent):
             mode=ai_mode,
             prompt=prompt,
             timeout=context.agent_config.ai_timeout // 2,
+            agent_config=context.agent_config,
+            metrics=getattr(context, "metrics", None),
+            provider_registry=getattr(context, "provider_registry", None),
         )
 
         try:

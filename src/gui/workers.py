@@ -74,6 +74,7 @@ class AgentWorker(QObject):
                 agents=agents,
                 ai_settings=self._ai_settings,
                 render_settings=self._settings,
+                ai_mode=self._ai_mode,
                 progress_callback=self.progress.emit,
             )
 

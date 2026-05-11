@@ -68,6 +68,9 @@ class CoderAgent(Agent):
                 prompt=prompt,
                 previous_code="",
                 timeout=context.agent_config.ai_timeout,
+                agent_config=context.agent_config,
+                metrics=getattr(context, "metrics", None),
+                provider_registry=getattr(context, "provider_registry", None),
             )
 
             code = sanitize_code(code)
@@ -116,6 +119,9 @@ class CoderAgent(Agent):
                 prompt=prompt,
                 previous_code=context.current_code,
                 timeout=context.agent_config.ai_timeout,
+                agent_config=context.agent_config,
+                metrics=getattr(context, "metrics", None),
+                provider_registry=getattr(context, "provider_registry", None),
             )
 
             code = sanitize_code(code, previous_code=context.current_code)
@@ -134,4 +140,3 @@ class CoderAgent(Agent):
                 payload={"error": f"代码修复失败: {exc}"},
                 correlation_id=event.correlation_id,
             )
-
