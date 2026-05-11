@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import json
+from typing import TypedDict
 
 from src.core.agent import Agent
 from src.core.context import TaskContext
@@ -25,6 +26,17 @@ REVIEWER_PROMPT = """审查以下 Manim 代码是否符合规范：
 {{"approved": true/false, "issues": ["问题1", "问题2"], "suggested_fix": "修复建议"}}"""
 
 
+class StaticReviewResult(TypedDict):
+    approved: bool
+    issues: list[str]
+
+
+class AIReviewResult(TypedDict, total=False):
+    approved: bool
+    issues: list[str]
+    suggested_fix: str
+
+
 class ReviewerAgent(Agent):
     """代码审查Agent：检查代码质量，决定是否通过"""
 
@@ -38,12 +50,12 @@ class ReviewerAgent(Agent):
         enable_static_review = getattr(agent_config, "enable_static_review", True)
         enable_ai_review = getattr(agent_config, "enable_ai_review", True)
 
-        static_result = {"approved": True, "issues": []}
+        static_result: StaticReviewResult = {"approved": True, "issues": []}
         if enable_static_review:
             static_result = self._static_review(code)
 
         if not static_result["approved"]:
-            issues = [str(issue) for issue in static_result["issues"]]
+            issues = static_result["issues"]
             context.review_feedback = "; ".join(issues)
             self._log(context, f"静态审查不通过: {context.review_feedback}")
             return Event(
@@ -69,8 +81,8 @@ class ReviewerAgent(Agent):
         try:
             ai_result = await self._ai_review(code, context)
             if not ai_result.get("approved", True):
-                feedback = ai_result.get("suggested_fix", "代码需要修复")
-                issues = [str(issue) for issue in ai_result.get("issues", [])]
+                feedback = ai_result["suggested_fix"] if "suggested_fix" in ai_result else "代码需要修复"
+                issues = ai_result["issues"] if "issues" in ai_result else []
                 if issues:
                     feedback = f"{feedback} | 问题: {'; '.join(issues)}"
                 context.review_feedback = feedback
@@ -97,9 +109,9 @@ class ReviewerAgent(Agent):
         if callback:
             callback(f"[Reviewer] {message}")
 
-    def _static_review(self, code: str) -> dict:
+    def _static_review(self, code: str) -> StaticReviewResult:
         """静态代码审查"""
-        issues = []
+        issues: list[str] = []
 
         if "from manim import" not in code:
             issues.append("缺少 'from manim import *'")
@@ -114,7 +126,7 @@ class ReviewerAgent(Agent):
 
         return {"approved": len(issues) == 0, "issues": issues}
 
-    async def _ai_review(self, code: str, context: TaskContext) -> dict:
+    async def _ai_review(self, code: str, context: TaskContext) -> AIReviewResult:
         """AI增强审查"""
         from src.services.ai_clients import call_ai
 
@@ -138,6 +150,23 @@ class ReviewerAgent(Agent):
                     if part.strip().startswith("json"):
                         response = part.strip()[4:]
                         break
-            return json.loads(response)
+            parsed = json.loads(response)
+            if not isinstance(parsed, dict):
+                return {"approved": True}
+
+            result: AIReviewResult = {}
+            approved = parsed.get("approved")
+            if isinstance(approved, bool):
+                result["approved"] = approved
+
+            issues = parsed.get("issues")
+            if isinstance(issues, list):
+                result["issues"] = [str(issue) for issue in issues]
+
+            suggested_fix = parsed.get("suggested_fix")
+            if isinstance(suggested_fix, str):
+                result["suggested_fix"] = suggested_fix
+
+            return result
         except json.JSONDecodeError:
             return {"approved": True}
