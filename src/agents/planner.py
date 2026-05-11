@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from src.core.agent import Agent
 from src.core.context import TaskContext

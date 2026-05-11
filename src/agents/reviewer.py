@@ -1,8 +1,8 @@
 # agents/reviewer.py
 from __future__ import annotations
 
-import json
 import ast
+import json
 
 from src.core.agent import Agent
 from src.core.context import TaskContext
@@ -42,7 +42,8 @@ class ReviewerAgent(Agent):
             static_result = self._static_review(code)
 
         if not static_result["approved"]:
-            context.review_feedback = "; ".join(static_result["issues"])
+            issues = [str(issue) for issue in static_result["issues"]]
+            context.review_feedback = "; ".join(issues)
             self._log(context, f"静态审查不通过: {context.review_feedback}")
             return Event(
                 type=EventType.CODE_NEEDS_FIX,
@@ -60,7 +61,7 @@ class ReviewerAgent(Agent):
             ai_result = await self._ai_review(code, context)
             if not ai_result.get("approved", True):
                 feedback = ai_result.get("suggested_fix", "代码需要修复")
-                issues = ai_result.get("issues", [])
+                issues = [str(issue) for issue in ai_result.get("issues", [])]
                 if issues:
                     feedback = f"{feedback} | 问题: {'; '.join(issues)}"
                 context.review_feedback = feedback

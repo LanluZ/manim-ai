@@ -5,8 +5,8 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QAction, QImage, QPixmap, QFont
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtGui import QAction, QFont, QImage, QPixmap
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -22,21 +22,21 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QPlainTextEdit,
+    QPushButton,
+    QScrollArea,
     QSizePolicy,
     QSpinBox,
     QStackedLayout,
     QStatusBar,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
-    QTabWidget,
-    QScrollArea,
 )
 
+from src.gui.workers import AgentWorker, GuiTaskResult, start_worker
 from src.services.config import AISettings, RenderSettings
 from src.services.database import Database, Segment
-from src.gui.workers import AgentWorker, start_worker, GuiTaskResult
 
 
 @dataclass
@@ -987,7 +987,7 @@ class MainWindow(QMainWindow):
                 )
                 self._play_segment(updated_segment)
             else:
-                self._log(f"未找到分段 #{{self._current_segment.segment_index}} 对应的视频")
+                self._log("未找到分段 #{self._current_segment.segment_index} 对应的视频")
         
         self.generate_btn.setEnabled(True)
         self._current_worker = None

@@ -9,5 +9,8 @@ requests>=2.31.0
 
 # Development tools (optional)
 pytest>=8.0.0
+ruff>=0.8.0
+mypy>=1.10.0
+types-requests>=2.31.0
 # nuitka  # For building standalone executables
 # ordered-set  # For optimized builds

@@ -4,7 +4,6 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DEFAULT_DATASET = Path("data/evaluation/math_animation_prompts.json")
 
 

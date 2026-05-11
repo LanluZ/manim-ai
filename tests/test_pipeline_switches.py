@@ -10,7 +10,7 @@ from src.core.agent import Agent
 from src.core.context import TaskContext
 from src.core.coordinator import Coordinator
 from src.core.events import Event, EventType
-from src.services.config import AISettings, AgentConfig, RenderSettings
+from src.services.config import AgentConfig, AISettings, RenderSettings
 
 
 def _ai_settings() -> AISettings:

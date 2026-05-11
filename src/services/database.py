@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -97,6 +97,7 @@ class Database:
                 "VALUES (?, ?, ?, '', '', ?)",
                 (workspace, segment_index, input_text, created_at),
             )
+            assert cursor.lastrowid is not None
             segment_id = int(cursor.lastrowid)
         
         return Segment(

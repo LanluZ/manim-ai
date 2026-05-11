@@ -2,19 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from time import perf_counter
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 import requests
-from openai import OpenAI
+from openai import APIConnectionError, APITimeoutError, AuthenticationError, OpenAI, RateLimitError
 
-try:
-    from openai import APIConnectionError, APITimeoutError, RateLimitError, AuthenticationError
-except ImportError:  # pragma: no cover
-    APIConnectionError = APITimeoutError = RateLimitError = AuthenticationError = Exception
-
-from src.services.config import AISettings, AgentConfig
-
+from src.services.config import AgentConfig, AISettings
 
 RETRYABLE_ERROR_KINDS = {"timeout", "rate_limit", "server", "invalid_response", "unknown"}
 
@@ -123,7 +117,7 @@ class DeepSeekProvider:
                 http_client=http_client,
             )
             try:
-                messages = (
+                messages: Any = (
                     [{"role": "user", "content": request.prompt}]
                     if not request.system_prompt
                     else [

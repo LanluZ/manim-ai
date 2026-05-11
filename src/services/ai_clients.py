@@ -1,21 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
-import httpx
-import requests
-from openai import OpenAI
-
-try:
-    from openai import APIConnectionError, APITimeoutError
-except ImportError:  # pragma: no cover
-    APIConnectionError = APITimeoutError = Exception
-
-from src.services.config import AISettings
-from src.services.config import AgentConfig
 from src.core.metrics import TaskMetrics
-from src.services.providers import ProviderRegistry, ProviderRequest, ProviderRouter, ProviderError
-
+from src.services.config import AgentConfig, AISettings
+from src.services.providers import ProviderError, ProviderRegistry, ProviderRequest, ProviderRouter
 
 SECTION_MARKER = "# <<SECTION_BREAK>>"
 
@@ -99,131 +88,6 @@ def call_ai(
         return response.content
     except ProviderError as exc:
         raise AIError(f"AI {exc.provider} 接口调用失败: {exc}") from exc
-
-
-def _resolve_provider(
-    mode: str,
-) -> tuple[str, Callable[..., str]]:
-    if mode == "deepseek":
-        return "deepseek", _call_deepseek
-    if mode == "gemini":
-        return "gemini", _call_gemini
-    raise AIError("未指定有效的 AI 模式")
-
-
-def _call_deepseek(
-    settings: AISettings,
-    prompt: str,
-    previous_code: str,
-    debug: Callable[[str], None] | None,
-    timeout: int,
-    raw_prompt: bool = False,
-) -> str:
-    if not settings.deepseek_api_key:
-        raise AIError("DeepSeek API Key 未配置")
-    base = settings.deepseek_base_url.strip().rstrip("/")
-    if not base.startswith("http://") and not base.startswith("https://"):
-        base = f"https://{base}"
-    base_url = f"{base}/v1"
-    url = f"{base_url}/chat/completions"
-    if debug:
-        debug(f"DeepSeek 请求：{url} | model={settings.deepseek_model}")
-    if debug:
-        debug(f"DeepSeek 请求已发送，超时 {timeout}s")
-    user_content = prompt if raw_prompt else build_prompt(prompt, previous_code)
-    timeout_config = httpx.Timeout(float(timeout))
-    transport = httpx.HTTPTransport(retries=3)
-    with httpx.Client(
-        timeout=timeout_config,
-        transport=transport,
-        follow_redirects=True,
-    ) as http_client:
-        client = OpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=base_url,
-            timeout=timeout_config,
-            max_retries=2,
-            http_client=http_client,
-        )
-        try:
-            messages = (
-                [{"role": "user", "content": user_content}]
-                if raw_prompt
-                else [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_content},
-                ]
-            )
-            response = client.chat.completions.create(
-                model=settings.deepseek_model,
-                messages=messages,
-                temperature=0.2,
-            )
-        except (APIConnectionError, APITimeoutError) as exc:
-            raise AIError(
-                "DeepSeek 连接失败，请检查网络/代理设置或 base_url 是否可达"
-            ) from exc
-        except httpx.HTTPError as exc:
-            raise AIError(
-                "DeepSeek 连接失败，请检查网络/代理设置或 base_url 是否可达"
-            ) from exc
-    content = response.choices[0].message.content
-    if not content:
-        raise AIError("DeepSeek 返回内容为空")
-    if debug:
-        debug("DeepSeek 返回成功")
-    return content
-
-
-def _call_gemini(
-    settings: AISettings,
-    prompt: str,
-    previous_code: str,
-    debug: Callable[[str], None] | None,
-    timeout: int,
-    raw_prompt: bool = False,
-) -> str:
-    if not settings.gemini_api_key:
-        raise AIError("Gemini API Key 未配置")
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{settings.gemini_model}:generateContent"
-    )
-    if debug:
-        debug(f"Gemini 请求：{url} | model={settings.gemini_model}")
-    params = {"key": settings.gemini_api_key}
-    user_content = prompt if raw_prompt else build_prompt(prompt, previous_code)
-    full_content = user_content if raw_prompt else f"{SYSTEM_PROMPT}\n{user_content}"
-    payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": full_content}],
-            }
-        ],
-        "generationConfig": {"temperature": 0.2},
-    }
-    if debug:
-        debug(f"Gemini 请求已发送，超时 {timeout}s")
-    response = requests.post(
-        url,
-        params=params,
-        json=payload,
-        timeout=timeout,
-    )
-    response.raise_for_status()
-    data = response.json()
-    candidates = data.get("candidates", [])
-    if not candidates:
-        raise AIError("Gemini 返回为空")
-    parts = candidates[0].get("content", {}).get("parts", [])
-    text_parts = [part.get("text", "") for part in parts]
-    content = "\n".join(text_parts).strip()
-    if not content:
-        raise AIError("Gemini 返回内容为空")
-    if debug:
-        debug("Gemini 返回成功")
-    return content
 
 
 def sanitize_code(code: str, previous_code: str = "") -> str:

@@ -165,6 +165,52 @@ python main.py --cli "创建一个3x3矩阵，展示它的转置过程"
 python main.py --cli --width 1280 --height 720 --fps 30 "旋转的球体"
 ```
 
+## 评测与可靠性验证
+
+项目内置数学动画 prompt 评测集，位于 `data/evaluation/math_animation_prompts.json`。当前包含 40 条 prompt，覆盖函数图像、几何、线性代数、概率统计、微积分、数论、离散数学等类型。
+
+评测 runner 会输出 JSON 和 CSV 报告，统计以下指标：
+
+- 首次渲染成功率
+- 自动修复后最终成功率
+- 平均修复轮数
+- 平均端到端耗时
+- 平均 API 成本估算
+- Provider 调用序列与失败类型
+
+本地可先使用 fake provider / fake render 验证评测链路，不消耗真实 API：
+
+```bash
+python -m src.evaluation.runner --fake-providers --fake-render --limit 2 --variant baseline --variant deepseek_timeout
+```
+
+真实评测需要配置真实 API key，并使用 Manim 实际渲染：
+
+```bash
+python -m src.evaluation.runner --limit 40 --deepseek-key <key> --gemini-key <key>
+```
+
+评测完成后，将真实跑批结果回填到下表。不要填写 fake provider 或未实际测量的数据。
+
+| 实验变体 | Prompt 数 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 |
+|----------|-----------|----------------|------------------|--------------|----------------|---------------|
+| baseline | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| no_reviewer | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| no_static_review | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| no_auto_fix | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| deepseek_timeout | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+| gemini_error | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+
+## 工程质量
+
+CI 使用 GitHub Actions 执行 lint、type check 和 pytest。对应命令：
+
+```bash
+ruff check src tests
+mypy src tests
+pytest -q
+```
+
 ## 许可证
 
 MIT License

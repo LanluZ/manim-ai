@@ -4,11 +4,11 @@ from __future__ import annotations
 from pathlib import Path
 from time import perf_counter
 
-from src.core.metrics import RenderAttempt
-from src.services.manim_runner import RenderError, render_manim_scene
 from src.core.agent import Agent
 from src.core.context import TaskContext, TaskResult
 from src.core.events import Event, EventType
+from src.core.metrics import RenderAttempt
+from src.services.manim_runner import RenderError, render_manim_scene
 
 
 class RendererAgent(Agent):

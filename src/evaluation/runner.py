@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator
 
 from src.agents.coder import CoderAgent
 from src.agents.planner import PlannerAgent
@@ -16,10 +16,9 @@ from src.core.coordinator import Coordinator
 from src.core.events import EventType
 from src.evaluation.dataset import DEFAULT_DATASET, PromptCase, load_prompt_cases
 from src.evaluation.reporting import PromptRunRecord, aggregate_records, write_reports
-from src.services.config import AISettings, AgentConfig, RenderSettings
+from src.services.config import AgentConfig, AISettings, RenderSettings
 from src.services.manim_runner import RenderResult
 from src.services.providers import FaultyProvider, ProviderRegistry, StaticProvider
-
 
 VALID_FAKE_CODE = """from manim import *
 

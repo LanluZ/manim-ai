@@ -1,17 +1,17 @@
 # cli/main.py
 from __future__ import annotations
 
-import asyncio
 import argparse
+import asyncio
 from pathlib import Path
 
+from src.agents.coder import CoderAgent
+from src.agents.planner import PlannerAgent
+from src.agents.renderer import RendererAgent
+from src.agents.reviewer import ReviewerAgent
+from src.core.coordinator import Coordinator
 from src.services.config import AISettings, RenderSettings
 from src.services.database import Database
-from src.agents.planner import PlannerAgent
-from src.agents.coder import CoderAgent
-from src.agents.reviewer import ReviewerAgent
-from src.agents.renderer import RendererAgent
-from src.core.coordinator import Coordinator
 
 
 class CLIProgressHandler:

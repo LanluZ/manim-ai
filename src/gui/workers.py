@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-import threading
 from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal
 
+from src.agents.coder import CoderAgent
+from src.agents.planner import PlannerAgent
+from src.agents.renderer import RendererAgent
+from src.agents.reviewer import ReviewerAgent
 from src.core.context import TaskResult
 from src.core.coordinator import Coordinator
-from src.agents.planner import PlannerAgent
-from src.agents.coder import CoderAgent
-from src.agents.reviewer import ReviewerAgent
-from src.agents.renderer import RendererAgent
 from src.services.config import AISettings, RenderSettings
 
 

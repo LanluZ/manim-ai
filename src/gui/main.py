@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.services.database import Database
 from src.gui.main_window import run_app
+from src.services.database import Database
 
 
 def run_gui() -> None:

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.services.config import AISettings, AgentConfig
+from src.services.config import AgentConfig, AISettings
+from src.services.providers import ProviderCallRecord
 
 
 def _settings() -> AISettings:
@@ -31,7 +32,7 @@ def test_provider_router_retries_primary_then_falls_back() -> None:
         provider_fallback_order=("deepseek", "gemini"),
         max_provider_retries=1,
     )
-    records = []
+    records: list[ProviderCallRecord] = []
 
     router = ProviderRouter(registry, config)
     response = router.complete(
@@ -63,7 +64,7 @@ def test_provider_router_estimates_cost_for_successful_call() -> None:
         provider_fallback_order=("deepseek",),
         provider_prices_per_1k_tokens={"deepseek": (0.1, 0.2)},
     )
-    records = []
+    records: list[ProviderCallRecord] = []
 
     response = ProviderRouter(registry, config).complete(
         ProviderRequest(prompt="plot a sine wave", system_prompt="", timeout=1),

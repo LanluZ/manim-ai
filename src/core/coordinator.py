@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-from src.services.config import AgentConfig, AISettings, RenderSettings
-from src.services.providers import ProviderRegistry
 from src.core.agent import Agent
 from src.core.context import TaskContext, TaskResult
 from src.core.events import Event, EventType
 from src.core.message_bus import EventBus
+from src.services.config import AgentConfig, AISettings, RenderSettings
+from src.services.providers import ProviderRegistry
 
 
 class Coordinator:
