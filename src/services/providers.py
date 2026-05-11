@@ -18,6 +18,8 @@ class ProviderRequest:
     prompt: str
     system_prompt: str = ""
     timeout: int = 60
+    stream: bool = False
+    max_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,7 @@ class ProviderResponse:
     content: str
     usage: ProviderUsage
     estimated_cost_usd: float
+    first_token_seconds: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,16 @@ class ProviderCallRecord:
     error_message: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
+    output_chars: int = 0
+    first_token_seconds: float = 0.0
     estimated_cost_usd: float = 0.0
+
+
+@dataclass(frozen=True)
+class ProviderCompletion:
+    content: str
+    usage: ProviderUsage | None = None
+    first_token_seconds: float = 0.0
 
 
 class ProviderError(RuntimeError):
@@ -57,7 +69,7 @@ class ProviderError(RuntimeError):
 class AIProvider(Protocol):
     name: str
 
-    def complete(self, request: ProviderRequest, settings: AISettings) -> tuple[str, ProviderUsage | None]:
+    def complete(self, request: ProviderRequest, settings: AISettings) -> ProviderCompletion:
         ...
 
 
@@ -81,8 +93,8 @@ class StaticProvider:
         self._content = content
         self._usage = usage
 
-    def complete(self, request: ProviderRequest, settings: AISettings) -> tuple[str, ProviderUsage | None]:
-        return self._content, self._usage
+    def complete(self, request: ProviderRequest, settings: AISettings) -> ProviderCompletion:
+        return ProviderCompletion(content=self._content, usage=self._usage)
 
 
 class FaultyProvider:
@@ -91,14 +103,14 @@ class FaultyProvider:
         self._error_kind = error_kind
         self._message = message
 
-    def complete(self, request: ProviderRequest, settings: AISettings) -> tuple[str, ProviderUsage | None]:
+    def complete(self, request: ProviderRequest, settings: AISettings) -> ProviderCompletion:
         raise ProviderError(self.name, self._error_kind, self._message)
 
 
 class DeepSeekProvider:
     name = "deepseek"
 
-    def complete(self, request: ProviderRequest, settings: AISettings) -> tuple[str, ProviderUsage | None]:
+    def complete(self, request: ProviderRequest, settings: AISettings) -> ProviderCompletion:
         if not settings.deepseek_api_key:
             raise ProviderError(self.name, "auth", "DeepSeek API Key 未配置")
 
@@ -125,11 +137,40 @@ class DeepSeekProvider:
                         {"role": "user", "content": request.prompt},
                     ]
                 )
-                response = client.chat.completions.create(
-                    model=settings.deepseek_model,
-                    messages=messages,
-                    temperature=0.2,
-                )
+                kwargs: dict[str, Any] = {
+                    "model": settings.deepseek_model,
+                    "messages": messages,
+                    "temperature": 0.2,
+                }
+                if request.max_tokens is not None:
+                    kwargs["max_tokens"] = request.max_tokens
+
+                if request.stream:
+                    stream_started = perf_counter()
+                    first_token_seconds = 0.0
+                    content_parts: list[str] = []
+                    reasoning_parts: list[str] = []
+                    stream = client.chat.completions.create(**kwargs, stream=True)
+                    for chunk in stream:
+                        chunk_delta = chunk.choices[0].delta
+                        content_delta = getattr(chunk_delta, "content", None)
+                        reasoning_delta = getattr(chunk_delta, "reasoning_content", None)
+                        delta = content_delta or reasoning_delta
+                        if delta and not first_token_seconds:
+                            first_token_seconds = perf_counter() - stream_started
+                        if content_delta:
+                            content_parts.append(content_delta)
+                        elif reasoning_delta:
+                            reasoning_parts.append(reasoning_delta)
+                    content = "".join(content_parts) or "".join(reasoning_parts)
+                    if not content:
+                        raise ProviderError(self.name, "invalid_response", "DeepSeek 返回内容为空")
+                    return ProviderCompletion(
+                        content=content,
+                        first_token_seconds=first_token_seconds,
+                    )
+
+                response = client.chat.completions.create(**kwargs)
             except AuthenticationError as exc:
                 raise ProviderError(self.name, "auth", str(exc)) from exc
             except RateLimitError as exc:
@@ -149,17 +190,20 @@ class DeepSeekProvider:
 
         usage = getattr(response, "usage", None)
         if usage is None:
-            return content, None
-        return content, ProviderUsage(
-            input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
-            output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+            return ProviderCompletion(content=content)
+        return ProviderCompletion(
+            content=content,
+            usage=ProviderUsage(
+                input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+                output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+            ),
         )
 
 
 class GeminiProvider:
     name = "gemini"
 
-    def complete(self, request: ProviderRequest, settings: AISettings) -> tuple[str, ProviderUsage | None]:
+    def complete(self, request: ProviderRequest, settings: AISettings) -> ProviderCompletion:
         if not settings.gemini_api_key:
             raise ProviderError(self.name, "auth", "Gemini API Key 未配置")
 
@@ -204,8 +248,8 @@ class GeminiProvider:
             output_tokens=int(usage_data.get("candidatesTokenCount", 0) or 0),
         )
         if usage.input_tokens == 0 and usage.output_tokens == 0:
-            return content, None
-        return content, usage
+            return ProviderCompletion(content=content)
+        return ProviderCompletion(content=content, usage=usage)
 
 
 class ProviderRouter:
@@ -227,7 +271,9 @@ class ProviderRouter:
             for attempt in range(1, attempts + 1):
                 started = perf_counter()
                 try:
-                    content, usage = provider.complete(request, settings)
+                    completion = provider.complete(request, settings)
+                    content = completion.content
+                    usage = completion.usage
                     final_usage = usage or estimate_usage(request, content)
                     cost = estimate_cost(provider_name, final_usage, self.config)
                     duration = perf_counter() - started
@@ -238,11 +284,19 @@ class ProviderRouter:
                         attempt=attempt,
                         input_tokens=final_usage.input_tokens,
                         output_tokens=final_usage.output_tokens,
+                        output_chars=len(content),
+                        first_token_seconds=completion.first_token_seconds,
                         estimated_cost_usd=cost,
                     )
                     if records is not None:
                         records.append(record)
-                    return ProviderResponse(provider_name, content, final_usage, cost)
+                    return ProviderResponse(
+                        provider=provider_name,
+                        content=content,
+                        usage=final_usage,
+                        estimated_cost_usd=cost,
+                        first_token_seconds=completion.first_token_seconds,
+                    )
                 except ProviderError as exc:
                     duration = perf_counter() - started
                     last_error = exc

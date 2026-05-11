@@ -78,6 +78,41 @@ def test_provider_router_estimates_cost_for_successful_call() -> None:
     assert records[0].estimated_cost_usd == response.estimated_cost_usd
 
 
+def test_provider_router_records_streaming_timing_metadata() -> None:
+    from src.services.providers import (
+        ProviderCompletion,
+        ProviderRegistry,
+        ProviderRequest,
+        ProviderRouter,
+        ProviderUsage,
+    )
+
+    class TimedProvider:
+        name = "deepseek"
+
+        def complete(self, _request: ProviderRequest, _settings: AISettings) -> ProviderCompletion:
+            return ProviderCompletion(
+                content="from manim import *",
+                usage=ProviderUsage(input_tokens=10, output_tokens=5),
+                first_token_seconds=0.42,
+            )
+
+    registry = ProviderRegistry()
+    registry.register(TimedProvider())
+    records: list[ProviderCallRecord] = []
+
+    response = ProviderRouter(registry, AgentConfig(provider_fallback_order=("deepseek",))).complete(
+        ProviderRequest(prompt="p", stream=True),
+        settings=_settings(),
+        preferred_provider="deepseek",
+        records=records,
+    )
+
+    assert response.first_token_seconds == 0.42
+    assert records[0].first_token_seconds == 0.42
+    assert records[0].output_chars == len("from manim import *")
+
+
 def test_provider_router_raises_last_error_when_all_providers_fail() -> None:
     from src.services.providers import (
         FaultyProvider,

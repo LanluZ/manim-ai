@@ -47,7 +47,12 @@ class AgentConfig:
     temperature: float = 0.2     # AI 生成温度
     enable_reviewer: bool = True
     enable_static_review: bool = True
+    enable_ai_review: bool = True
     enable_auto_fix: bool = True
+    optimize_for_speed: bool = False
+    use_template_generation: bool = False
+    enable_streaming: bool = False
+    max_output_tokens: int | None = None
     provider_fallback_order: tuple[str, ...] = ("deepseek", "gemini")
     max_provider_retries: int = 1
     provider_prices_per_1k_tokens: dict[str, tuple[float, float]] = field(

@@ -36,6 +36,7 @@ class ReviewerAgent(Agent):
         code = event.payload["code"]
         agent_config = getattr(context, "agent_config", None)
         enable_static_review = getattr(agent_config, "enable_static_review", True)
+        enable_ai_review = getattr(agent_config, "enable_ai_review", True)
 
         static_result = {"approved": True, "issues": []}
         if enable_static_review:
@@ -55,6 +56,14 @@ class ReviewerAgent(Agent):
             self._log(context, "静态审查通过，进行AI审查...")
         else:
             self._log(context, "静态审查已关闭，进行AI审查...")
+
+        if not enable_ai_review:
+            self._log(context, "AI审查已关闭")
+            return Event(
+                type=EventType.CODE_APPROVED,
+                payload={"code": code},
+                correlation_id=event.correlation_id,
+            )
 
         # AI审查（可选）
         try:

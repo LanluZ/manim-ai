@@ -187,7 +187,7 @@ python -m src.evaluation.runner --fake-providers --fake-render --limit 2 --varia
 调试阶段建议使用快速预览参数，减少一次评测的渲染和模型调用开销：
 
 ```bash
-python -m src.evaluation.runner --limit 5 --variant baseline --fast-preview --skip-planner --no-save-sections --max-iterations 2 --render-timeout 120 --deepseek-key <key>
+python -m src.evaluation.runner --limit 5 --variant baseline --fast-preview --skip-planner --no-ai-review --stream --max-output-tokens 1600 --no-save-sections --max-iterations 1 --render-timeout 20 --case-timeout 60 --deepseek-key <key>
 ```
 
 真实评测需要配置真实 API key，并使用 Manim 实际渲染：
@@ -198,10 +198,11 @@ python -m src.evaluation.runner --limit 40 --variant baseline --deepseek-key <ke
 
 已完成真实测试记录如下，仅记录实际跑过的数据，不包含 fake provider 结果。
 
-| 日期 | Provider | 实验变体 | Prompt 数 | 范围 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 |
-|------|----------|----------|-----------|------|----------------|------------------|--------------|----------------|---------------|
-| 2026-05-11 | DeepSeek | baseline | 5 | function_graphs 前 5 条 | 80.00% | 100.00% | 0.40 | 107.42s | $0.001567 |
-| 2026-05-11 | DeepSeek | baseline | 1 | function-001 烟测 | 100.00% | 100.00% | 0.00 | 219.04s | $0.001385 |
+| 日期 | Provider | 实验变体 | Prompt 数 | 范围 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 | 首 token | Provider 耗时 |
+|------|----------|----------|-----------|------|----------------|------------------|--------------|----------------|---------------|-----------|---------------|
+| 2026-05-11 | DeepSeek V4 Flash | baseline_stream_fast | 1 | function-001 快速预览 | 100.00% | 100.00% | 0.00 | 28.42s | $0.000075 | 1.24s | 23.62s |
+| 2026-05-11 | DeepSeek | baseline | 5 | function_graphs 前 5 条 | 80.00% | 100.00% | 0.40 | 107.42s | $0.001567 | - | - |
+| 2026-05-11 | DeepSeek | baseline | 1 | function-001 烟测 | 100.00% | 100.00% | 0.00 | 219.04s | $0.001385 | - | - |
 
 ## 工程质量
 

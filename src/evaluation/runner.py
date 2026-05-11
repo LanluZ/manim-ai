@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
+from time import perf_counter
 
 from src.agents.coder import CoderAgent
 from src.agents.planner import PlannerAgent
@@ -67,13 +68,14 @@ async def run_cases(
     output_root: Path,
     fake_render: bool = False,
     skip_planner: bool = False,
+    case_timeout: float | None = None,
 ) -> list[PromptRunRecord]:
     records: list[PromptRunRecord] = []
     with _fake_render_enabled(fake_render):
         for variant in variants:
             for case in cases:
                 records.append(
-                    await _run_one_case(
+                    await _run_one_case_with_timeout(
                         case=case,
                         variant=variant,
                         ai_settings=ai_settings,
@@ -81,9 +83,63 @@ async def run_cases(
                         ai_mode=ai_mode,
                         output_root=output_root,
                         skip_planner=skip_planner,
+                        case_timeout=case_timeout,
                     )
                 )
     return records
+
+
+async def _run_one_case_with_timeout(
+    case: PromptCase,
+    variant: Variant,
+    ai_settings: AISettings,
+    render_settings: RenderSettings,
+    ai_mode: str,
+    output_root: Path,
+    skip_planner: bool,
+    case_timeout: float | None,
+) -> PromptRunRecord:
+    if case_timeout is None or case_timeout <= 0:
+        return await _run_one_case(
+            case=case,
+            variant=variant,
+            ai_settings=ai_settings,
+            render_settings=render_settings,
+            ai_mode=ai_mode,
+            output_root=output_root,
+            skip_planner=skip_planner,
+        )
+
+    started = perf_counter()
+    try:
+        return await asyncio.wait_for(
+            _run_one_case(
+                case=case,
+                variant=variant,
+                ai_settings=ai_settings,
+                render_settings=render_settings,
+                ai_mode=ai_mode,
+                output_root=output_root,
+                skip_planner=skip_planner,
+            ),
+            timeout=case_timeout,
+        )
+    except TimeoutError:
+        return PromptRunRecord(
+            variant=variant.name,
+            prompt_id=case.id,
+            category=case.category,
+            success=False,
+            first_render_success=False,
+            repair_rounds=0,
+            elapsed_seconds=perf_counter() - started,
+            estimated_api_cost_usd=0.0,
+            provider_sequence=[],
+            provider_duration_seconds=0.0,
+            provider_first_token_seconds=0.0,
+            provider_output_chars=0,
+            error=f"case_timeout({case_timeout}s)",
+        )
 
 
 async def _run_one_case(
@@ -111,6 +167,12 @@ async def _run_one_case(
     metrics = result.metrics
     repair_rounds = sum(1 for event in result.events if event.type == EventType.CODE_NEEDS_FIX)
     provider_sequence = [call.provider for call in metrics.provider_calls]
+    provider_duration = sum(call.duration_seconds for call in metrics.provider_calls)
+    first_token_values = [
+        call.first_token_seconds for call in metrics.provider_calls if call.first_token_seconds > 0
+    ]
+    provider_first_token = first_token_values[0] if first_token_values else 0.0
+    provider_output_chars = sum(call.output_chars for call in metrics.provider_calls)
     first_render_success = bool(metrics.first_render_success) if metrics.first_render_success is not None else False
     return PromptRunRecord(
         variant=variant.name,
@@ -122,6 +184,9 @@ async def _run_one_case(
         elapsed_seconds=metrics.elapsed_seconds,
         estimated_api_cost_usd=metrics.estimated_api_cost_usd,
         provider_sequence=provider_sequence,
+        provider_duration_seconds=provider_duration,
+        provider_first_token_seconds=provider_first_token,
+        provider_output_chars=provider_output_chars,
         error=result.error,
     )
 
@@ -208,10 +273,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--quality", default="l", choices=["l", "m", "h", "k"])
     parser.add_argument("--fast-preview", action="store_true", help="Use faster low-resolution render settings")
     parser.add_argument("--skip-planner", action="store_true", help="Use each prompt directly as one task")
+    parser.add_argument("--no-ai-review", action="store_true", help="Keep static review but skip LLM reviewer call")
+    parser.add_argument("--template-only", action="store_true", help="Generate a deterministic fast preview without LLM")
+    parser.add_argument("--stream", action="store_true", help="Use provider streaming when supported")
+    parser.add_argument("--max-output-tokens", type=int, default=None)
     parser.add_argument("--no-save-sections", action="store_true", help="Disable Manim section video output")
     parser.add_argument("--max-iterations", type=int, default=5)
     parser.add_argument("--ai-timeout", type=int, default=60)
     parser.add_argument("--render-timeout", type=int, default=600)
+    parser.add_argument("--case-timeout", type=int, default=None, help="Maximum seconds per prompt case")
     parser.add_argument("--deepseek-key", default="")
     parser.add_argument("--deepseek-base", default="https://api.deepseek.com")
     parser.add_argument("--deepseek-model", default="deepseek-chat")
@@ -244,6 +314,11 @@ def main() -> None:
         max_iterations=args.max_iterations,
         ai_timeout=args.ai_timeout,
         render_timeout=args.render_timeout,
+        enable_ai_review=not args.no_ai_review,
+        optimize_for_speed=args.fast_preview,
+        use_template_generation=args.template_only,
+        enable_streaming=args.stream,
+        max_output_tokens=args.max_output_tokens,
     )
     variants = default_variants(base_config, fake_providers=args.fake_providers)
     if args.variant:
@@ -260,6 +335,7 @@ def main() -> None:
             output_root=run_dir,
             fake_render=args.fake_render,
             skip_planner=args.skip_planner,
+            case_timeout=args.case_timeout,
         )
     )
     json_path, csv_path = write_reports(records, run_dir)

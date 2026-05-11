@@ -94,3 +94,33 @@ async def _run_reviewer_skips_static_review_when_disabled(monkeypatch: pytest.Mo
     )
 
     assert event.type == EventType.CODE_APPROVED
+
+
+def test_reviewer_skips_ai_review_when_disabled(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    asyncio.run(_run_reviewer_skips_ai_review_when_disabled(monkeypatch, tmp_path))
+
+
+async def _run_reviewer_skips_ai_review_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    context = TaskContext(prompt="prompt", workspace=tmp_path, job_dir=tmp_path / "job")
+    context.agent_config = AgentConfig(enable_ai_review=False)  # type: ignore[attr-defined]
+    context.ai_settings = _ai_settings()  # type: ignore[attr-defined]
+
+    async def fail_if_called(_code: str, _context: TaskContext) -> dict:
+        raise AssertionError("AI review should not be called")
+
+    reviewer = ReviewerAgent()
+    monkeypatch.setattr(reviewer, "_ai_review", fail_if_called)
+
+    event = await reviewer.handle(
+        Event(
+            type=EventType.CODE_GENERATED,
+            payload={"code": "from manim import *\n\nclass Demo(Scene):\n    pass\n"},
+            correlation_id="cid",
+        ),
+        context,
+    )
+
+    assert event.type == EventType.CODE_APPROVED

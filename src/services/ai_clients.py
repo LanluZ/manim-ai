@@ -41,12 +41,14 @@ def generate_manim_code(
     provider_registry: ProviderRegistry | None = None,
 ) -> tuple[str, str]:
     user_content = build_prompt(prompt, previous_code)
+    config = agent_config or AgentConfig()
     request = ProviderRequest(
         prompt=user_content,
         system_prompt=SYSTEM_PROMPT,
         timeout=timeout,
+        stream=config.enable_streaming,
+        max_tokens=config.max_output_tokens,
     )
-    config = agent_config or AgentConfig()
     records = metrics.provider_calls if metrics is not None else None
     try:
         if debug:
@@ -80,7 +82,13 @@ def call_ai(
     records = metrics.provider_calls if metrics is not None else None
     try:
         response = ProviderRouter(provider_registry, config).complete(
-            ProviderRequest(prompt=prompt, system_prompt="", timeout=timeout),
+            ProviderRequest(
+                prompt=prompt,
+                system_prompt="",
+                timeout=timeout,
+                stream=config.enable_streaming,
+                max_tokens=config.max_output_tokens,
+            ),
             settings=settings,
             preferred_provider=mode,
             records=records,
@@ -92,7 +100,7 @@ def call_ai(
 
 def sanitize_code(code: str, previous_code: str = "") -> str:
     """清理和验证 AI 生成的代码"""
-    cleaned = _strip_code_fences(code).strip()
+    cleaned = _extract_code(code).strip()
     
     if previous_code.strip():
         # 追加模式：移除开头的 import 语句
@@ -240,5 +248,22 @@ def _strip_code_fences(code: str) -> str:
             lines = lines[:-1]
         return "\n".join(lines)
     return code
+
+
+def _extract_code(code: str) -> str:
+    marker = "from manim import"
+    if "```" in code:
+        parts = code.split("```")
+        for part in parts:
+            stripped = part.strip()
+            if stripped.startswith("python"):
+                return stripped.removeprefix("python").strip()
+            if marker in stripped:
+                return stripped[stripped.find(marker) :]
+
+    cleaned = _strip_code_fences(code)
+    if marker in cleaned:
+        return cleaned[cleaned.find(marker) :]
+    return cleaned
 
 

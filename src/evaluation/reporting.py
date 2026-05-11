@@ -19,6 +19,9 @@ class PromptRunRecord:
     elapsed_seconds: float
     estimated_api_cost_usd: float
     provider_sequence: list[str]
+    provider_duration_seconds: float
+    provider_first_token_seconds: float
+    provider_output_chars: int
     error: str
 
 
@@ -37,6 +40,15 @@ def aggregate_records(records: list[PromptRunRecord]) -> dict[str, dict[str, flo
             "average_repair_rounds": _average([float(item.repair_rounds) for item in items]),
             "average_elapsed_seconds": _average([item.elapsed_seconds for item in items]),
             "average_api_cost_usd": _average([item.estimated_api_cost_usd for item in items]),
+            "average_provider_duration_seconds": _average(
+                [item.provider_duration_seconds for item in items]
+            ),
+            "average_provider_first_token_seconds": _average(
+                [item.provider_first_token_seconds for item in items]
+            ),
+            "average_provider_output_chars": _average(
+                [float(item.provider_output_chars) for item in items]
+            ),
         }
     return aggregates
 
@@ -64,6 +76,9 @@ def write_reports(records: list[PromptRunRecord], output_dir: Path) -> tuple[Pat
                 "elapsed_seconds",
                 "estimated_api_cost_usd",
                 "provider_sequence",
+                "provider_duration_seconds",
+                "provider_first_token_seconds",
+                "provider_output_chars",
                 "error",
             ],
         )
