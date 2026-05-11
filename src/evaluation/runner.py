@@ -12,8 +12,10 @@ from src.agents.coder import CoderAgent
 from src.agents.planner import PlannerAgent
 from src.agents.renderer import RendererAgent
 from src.agents.reviewer import ReviewerAgent
+from src.core.agent import Agent
+from src.core.context import TaskContext
 from src.core.coordinator import Coordinator
-from src.core.events import EventType
+from src.core.events import Event, EventType
 from src.evaluation.dataset import DEFAULT_DATASET, PromptCase, load_prompt_cases
 from src.evaluation.reporting import PromptRunRecord, aggregate_records, write_reports
 from src.services.config import AgentConfig, AISettings, RenderSettings
@@ -64,6 +66,7 @@ async def run_cases(
     ai_mode: str,
     output_root: Path,
     fake_render: bool = False,
+    skip_planner: bool = False,
 ) -> list[PromptRunRecord]:
     records: list[PromptRunRecord] = []
     with _fake_render_enabled(fake_render):
@@ -77,6 +80,7 @@ async def run_cases(
                         render_settings=render_settings,
                         ai_mode=ai_mode,
                         output_root=output_root,
+                        skip_planner=skip_planner,
                     )
                 )
     return records
@@ -89,10 +93,12 @@ async def _run_one_case(
     render_settings: RenderSettings,
     ai_mode: str,
     output_root: Path,
+    skip_planner: bool,
 ) -> PromptRunRecord:
     job_dir = output_root / "jobs" / variant.name / case.id
     job_dir.mkdir(parents=True, exist_ok=True)
-    agents = [PlannerAgent(), CoderAgent(), ReviewerAgent(), RendererAgent()]
+    planner: Agent = DirectPromptPlannerAgent() if skip_planner else PlannerAgent()
+    agents = [planner, CoderAgent(), ReviewerAgent(), RendererAgent()]
     coordinator = Coordinator(
         agents=agents,
         ai_settings=ai_settings,
@@ -118,6 +124,21 @@ async def _run_one_case(
         provider_sequence=provider_sequence,
         error=result.error,
     )
+
+
+class DirectPromptPlannerAgent(Agent):
+    """Evaluation-only planner that avoids one LLM call by using the prompt as a single task."""
+
+    name = "DirectPromptPlanner"
+    listens_to = [EventType.TASK_RECEIVED]
+
+    async def handle(self, event: Event, context: TaskContext) -> Event | None:
+        prompt = event.payload["prompt"]
+        return Event(
+            type=EventType.PLAN_CREATED,
+            payload={"tasks": [prompt], "original_prompt": prompt},
+            correlation_id=event.correlation_id,
+        )
 
 
 def _provider_registry(
@@ -152,6 +173,7 @@ def _fake_render_enabled(enabled: bool) -> Iterator[None]:
         settings: RenderSettings,
         job_dir: Path,
         logger: object | None = None,
+        timeout: int = 600,
     ) -> RenderResult:
         script_path = job_dir / "scene.py"
         script_path.write_text(cumulative_code, encoding="utf-8")
@@ -184,6 +206,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--height", type=int, default=360)
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--quality", default="l", choices=["l", "m", "h", "k"])
+    parser.add_argument("--fast-preview", action="store_true", help="Use faster low-resolution render settings")
+    parser.add_argument("--skip-planner", action="store_true", help="Use each prompt directly as one task")
+    parser.add_argument("--no-save-sections", action="store_true", help="Disable Manim section video output")
+    parser.add_argument("--max-iterations", type=int, default=5)
+    parser.add_argument("--ai-timeout", type=int, default=60)
+    parser.add_argument("--render-timeout", type=int, default=600)
     parser.add_argument("--deepseek-key", default="")
     parser.add_argument("--deepseek-base", default="https://api.deepseek.com")
     parser.add_argument("--deepseek-model", default="deepseek-chat")
@@ -202,13 +230,21 @@ def main() -> None:
         gemini_api_key=args.gemini_key,
         gemini_model=args.gemini_model,
     )
+    width = 320 if args.fast_preview else args.width
+    height = 180 if args.fast_preview else args.height
+    fps = 8 if args.fast_preview else args.fps
     render_settings = RenderSettings(
-        width=args.width,
-        height=args.height,
-        fps=args.fps,
+        width=width,
+        height=height,
+        fps=fps,
         quality=args.quality,
+        save_sections=not args.no_save_sections,
     )
-    base_config = AgentConfig()
+    base_config = AgentConfig(
+        max_iterations=args.max_iterations,
+        ai_timeout=args.ai_timeout,
+        render_timeout=args.render_timeout,
+    )
     variants = default_variants(base_config, fake_providers=args.fake_providers)
     if args.variant:
         wanted = set(args.variant)
@@ -223,6 +259,7 @@ def main() -> None:
             ai_mode=args.ai_mode,
             output_root=run_dir,
             fake_render=args.fake_render,
+            skip_planner=args.skip_planner,
         )
     )
     json_path, csv_path = write_reports(records, run_dir)

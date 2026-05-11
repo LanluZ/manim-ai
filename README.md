@@ -184,28 +184,24 @@ python main.py --cli --width 1280 --height 720 --fps 30 "旋转的球体"
 python -m src.evaluation.runner --fake-providers --fake-render --limit 2 --variant baseline --variant deepseek_timeout
 ```
 
+调试阶段建议使用快速预览参数，减少一次评测的渲染和模型调用开销：
+
+```bash
+python -m src.evaluation.runner --limit 5 --variant baseline --fast-preview --skip-planner --no-save-sections --max-iterations 2 --render-timeout 120 --deepseek-key <key>
+```
+
 真实评测需要配置真实 API key，并使用 Manim 实际渲染：
 
 ```bash
-python -m src.evaluation.runner --limit 40 --deepseek-key <key> --gemini-key <key>
+python -m src.evaluation.runner --limit 40 --variant baseline --deepseek-key <key>
 ```
 
-评测完成后，将真实跑批结果回填到下表。不要填写 fake provider 或未实际测量的数据。
+已完成真实测试记录如下，仅记录实际跑过的数据，不包含 fake provider 结果。
 
-| 实验变体 | Prompt 数 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 |
-|----------|-----------|----------------|------------------|--------------|----------------|---------------|
-| baseline | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| no_reviewer | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| no_static_review | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| no_auto_fix | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| deepseek_timeout | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| gemini_error | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-
-最近一次真实烟测记录（非完整基准，仅用于验证端到端链路）：
-
-| 日期 | 实验变体 | Prompt 数 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 |
-|------|----------|-----------|----------------|------------------|--------------|----------------|---------------|
-| 2026-05-11 | baseline | 1 | 100.00% | 100.00% | 0.00 | 219.04s | $0.001385 |
+| 日期 | Provider | 实验变体 | Prompt 数 | 范围 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 |
+|------|----------|----------|-----------|------|----------------|------------------|--------------|----------------|---------------|
+| 2026-05-11 | DeepSeek | baseline | 5 | function_graphs 前 5 条 | 80.00% | 100.00% | 0.40 | 107.42s | $0.001567 |
+| 2026-05-11 | DeepSeek | baseline | 1 | function-001 烟测 | 100.00% | 100.00% | 0.00 | 219.04s | $0.001385 |
 
 ## 工程质量
 

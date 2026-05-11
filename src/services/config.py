@@ -26,6 +26,7 @@ class RenderSettings:
     height: int
     fps: int
     quality: str
+    save_sections: bool = True
 
 
 @dataclass(frozen=True)

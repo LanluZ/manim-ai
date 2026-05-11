@@ -31,6 +31,7 @@ class RendererAgent(Agent):
                 settings=context.render_settings,
                 job_dir=job_dir,
                 logger=None,
+                timeout=context.agent_config.render_timeout,
             )
             context.metrics.render_attempts.append(
                 RenderAttempt(success=True, duration_seconds=perf_counter() - started)

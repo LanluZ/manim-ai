@@ -46,7 +46,7 @@ def build_manim_command(
     settings: RenderSettings,
     output_dir: Path,
 ) -> list[str]:
-    return [
+    command = [
         "manim",
         "-q",
         settings.quality,
@@ -58,10 +58,12 @@ def build_manim_command(
         "mp4",
         "--media_dir",
         str(output_dir),
-        "--save_sections",
         str(script_path),
         class_name,
     ]
+    if settings.save_sections:
+        command.insert(-2, "--save_sections")
+    return command
 
 
 def run_manim(
@@ -118,6 +120,7 @@ def render_manim_scene(
     settings: RenderSettings,
     job_dir: Path,
     logger: Callable[[str], None] | None = None,
+    timeout: int = 600,
 ) -> RenderResult:
     """渲染累积的 manim 场景并返回分段视频"""
     class_name = extract_scene_class(cumulative_code)
@@ -127,7 +130,7 @@ def render_manim_scene(
         command = build_manim_command(script_path, class_name, settings, job_dir)
         logger("Manim 命令: " + " ".join(command))
     
-    video_path = run_manim(script_path, class_name, settings, job_dir)
+    video_path = run_manim(script_path, class_name, settings, job_dir, timeout=timeout)
     section_videos = find_section_videos(job_dir, class_name)
     
     if logger:
