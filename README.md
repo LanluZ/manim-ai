@@ -4,7 +4,7 @@
 
 ![](/assets/img/001.apng)
 
-**多Agent协作系统**，通过 Planner → Coder → Reviewer → Renderer 自主生成3B1B风格的数学动画
+一个多 Agent 协作的 Manim 动画生成器，按 Planner → Coder → Reviewer → Renderer 的流程，把自然语言提示转成 3B1B 风格的数学动画。
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![Manim](https://img.shields.io/badge/Manim-0.18+-orange.svg)](https://www.manim.community/)
@@ -167,9 +167,9 @@ python main.py --cli --width 1280 --height 720 --fps 30 "旋转的球体"
 
 ## 评测与可靠性验证
 
-项目内置数学动画 prompt 评测集，位于 `data/evaluation/math_animation_prompts.json`。当前包含 40 条 prompt，覆盖函数图像、几何、线性代数、概率统计、微积分、数论、离散数学等类型。
+仓库里放了一份数学动画 prompt 评测集，路径是 `data/evaluation/math_animation_prompts.json`。现在一共有 40 条，覆盖函数图像、几何、线性代数、概率统计、微积分、数论、离散数学等类型。
 
-评测 runner 会输出 JSON 和 CSV 报告，统计以下指标：
+评测 runner 会同时输出 JSON 和 CSV，方便直接看下面这些指标：
 
 - 首次渲染成功率
 - 自动修复后最终成功率
@@ -178,25 +178,25 @@ python main.py --cli --width 1280 --height 720 --fps 30 "旋转的球体"
 - 平均 API 成本估算
 - Provider 调用序列与失败类型
 
-本地可先使用 fake provider / fake render 验证评测链路，不消耗真实 API：
+如果只是想先把流程跑通，可以先用 fake provider / fake render，不会消耗真实 API：
 
 ```bash
 python -m src.evaluation.runner --fake-providers --fake-render --limit 2 --variant baseline --variant deepseek_timeout
 ```
 
-调试阶段建议使用快速预览参数，减少一次评测的渲染和模型调用开销：
+调试时建议开快速预览，把一次评测的渲染和模型调用时间先压下来：
 
 ```bash
 python -m src.evaluation.runner --limit 5 --variant baseline --fast-preview --skip-planner --no-ai-review --stream --max-output-tokens 1600 --no-save-sections --max-iterations 1 --render-timeout 20 --case-timeout 60 --deepseek-key <key>
 ```
 
-真实评测需要配置真实 API key，并使用 Manim 实际渲染：
+正式跑评测时，再换成真实 API key，并让 Manim 真正渲染：
 
 ```bash
 python -m src.evaluation.runner --limit 40 --variant baseline --deepseek-key <key>
 ```
 
-已完成真实测试记录如下，仅记录实际跑过的数据，不包含 fake provider 结果。
+下面只放真实跑过的数据，fake provider 的结果不计入。
 
 | 日期 | Provider | 实验变体 | Prompt 数 | 范围 | 首次渲染成功率 | 自动修复后成功率 | 平均修复轮数 | 平均端到端耗时 | 平均 API 成本 | 首 token | Provider 耗时 |
 |------|----------|----------|-----------|------|----------------|------------------|--------------|----------------|---------------|-----------|---------------|
@@ -206,7 +206,7 @@ python -m src.evaluation.runner --limit 40 --variant baseline --deepseek-key <ke
 
 ## 工程质量
 
-CI 使用 GitHub Actions 执行 lint、type check 和 pytest。对应命令：
+CI 已接到 GitHub Actions，默认会跑 lint、type check 和 pytest。对应命令：
 
 ```bash
 ruff check src tests
