@@ -100,6 +100,7 @@ def call_ai(
 
 def sanitize_code(code: str, previous_code: str = "") -> str:
     """清理和验证 AI 生成的代码"""
+    code = str(code)
     cleaned = _extract_code(code).strip()
     
     if previous_code.strip():
@@ -255,9 +256,9 @@ def _extract_code(code: str) -> str:
     if "```" in code:
         parts = code.split("```")
         for part in parts:
-            stripped = part.strip()
+            stripped = str(part).strip()
             if stripped.startswith("python"):
-                return stripped.removeprefix("python").strip()
+                return stripped[len("python"):].strip()
             if marker in stripped:
                 return stripped[stripped.find(marker) :]
 
